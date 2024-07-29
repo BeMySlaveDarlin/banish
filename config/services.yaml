@@ -1,0 +1,28 @@
+# This file is the entry point to configure your own services.
+# Files in the packages/ subdirectory configure your dependencies.
+imports:
+    - { resource: 'components/common.yaml' }
+    - { resource: 'components/telegram.yaml' }
+
+# Put parameters here that don't need to change on each machine where the app is deployed
+# https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
+parameters:
+    app.env: '%env(APP_ENV)%'
+    app.name: '%env(APP_NAME)%'
+    app.version: '%env(APP_VERSION)%'
+    app.secret: '%env(APP_SECRET)%'
+    scheduler.timezone: 'UTC'
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Kernel.php'
+            - '../src/Component/*/*/Entity/'
+            - '../src/Component/*/*/UseCase/'
+            - '../src/Component/*/*/ValueObject/'
+            - '../src/Service/Doctrine/Type/'

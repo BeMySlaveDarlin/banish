@@ -1,0 +1,3 @@
+index:
+    path: /
+    controller: App\Component\Common\Controller\IndexController::handleAction

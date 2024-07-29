@@ -1,0 +1,29 @@
+# Production environment override
+services:
+  app:
+    build:
+      context: ./docker/php
+      target: php_dev
+      args:
+        APP_PORT: ${APP_PORT}
+        TIMEZONE: ${TIMEZONE}
+        COMPOSER_VERSION: ${COMPOSER_VERSION}
+    volumes:
+      - .:/var/www/app
+
+  supervisor:
+    build:
+      context: ./docker/php
+      target: php_dev_supervisor
+      args:
+        APP_PORT: ${APP_PORT}
+        TIMEZONE: ${TIMEZONE}
+        COMPOSER_VERSION: ${COMPOSER_VERSION}
+    volumes:
+      - .:/var/www/app
+      - ./docker/php/supervisor/supervisord.conf:/etc/supervisor/supervisord.conf
+      - ./var/log/supervisor:/var/log/supervisor
+
+  nginx:
+    build:
+      context: ./docker/nginx

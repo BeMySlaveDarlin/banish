@@ -1,0 +1,123 @@
+services:
+  app:
+    container_name: ${APP_NAME}.service.app
+    restart: unless-stopped
+    healthcheck:
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    env_file:
+      - .env
+    depends_on:
+      - database
+      - memcached
+    working_dir: /var/www/app
+    volumes:
+      - .:/var/www/app
+    networks:
+      - app_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  nginx:
+    container_name: ${APP_NAME}.service.nginx
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - app
+    volumes:
+      - .:/var/www/app
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - /var/log/nginx:/var/log/nginx
+    ports:
+      - ${NGINX_HTTP_PORTS}
+      - ${NGINX_HTTPS_PORTS}
+    networks:
+      - app_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  supervisor:
+    container_name: ${APP_NAME}.service.supervisor
+    restart: unless-stopped
+    healthcheck:
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    env_file:
+      - .env
+    depends_on:
+      - app
+    volumes:
+      - .:/var/www/app
+      - ./docker/php/supervisor/supervisord.conf:/etc/supervisor/supervisord.conf
+    networks:
+      - app_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  memcached:
+    container_name: ${APP_NAME}.service.memcached
+    image: memcached
+    restart: unless-stopped
+    ports:
+      - ${MEMCACHED_PORTS}
+    networks:
+      - app_network
+
+  database:
+    container_name: ${APP_NAME}.service.db
+    image: postgres:${POSTGRES_VERSION:-15}-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DATABASE_DB_NAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_USER: ${DATABASE_USER}
+      TZ: ${TIMEZONE}
+    ports:
+      - ${DATABASE_PORTS}
+    volumes:
+      - database_data:/var/lib/postgresql/data:rw
+    networks:
+      - app_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  redis:
+    container_name: ${APP_NAME}.service.redis
+    image: redis:5
+    restart: unless-stopped
+    env_file:
+      - .env
+    networks:
+      - app_network
+    volumes:
+      - redis_data:/data
+    command: [ "redis-server", "--appendonly", "yes" ]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  database_data:
+  redis_data:
+
+networks:
+  app_network:

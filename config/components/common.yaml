@@ -1,0 +1,5 @@
+parameters:
+    app.partitioned_tables:
+        telegram_request_history: created_at
+
+    app.super_admin_password: '%env(APP_ADMIN_PASSWORD)%'

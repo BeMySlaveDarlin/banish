@@ -1,0 +1,19 @@
+.idea/*
+###> symfony/framework-bundle ###
+/.env
+/config/secrets/prod/prod.decrypt.private.php
+/public/bundles/
+/var/
+/vendor/
+###< symfony/framework-bundle ###
+###> phpca reports ###
+/public/phpca/
+###< phpca reports ###
+
+###> docker ###
+/docker-compose.override.yaml
+/docker-compose.prod.yaml
+###< docker ###
+
+###> phpstan/phpstan ###
+phpstan.neon

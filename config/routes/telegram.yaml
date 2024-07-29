@@ -1,0 +1,6 @@
+telegram_webhook:
+  path: /api/telegram/webhook/{secret}
+  controller: App\Component\Telegram\Controller\WebhookController::handleAction
+  methods: POST
+  defaults:
+    secret: null

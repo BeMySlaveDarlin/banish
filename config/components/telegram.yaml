@@ -1,0 +1,4 @@
+parameters:
+    telegram.api_url: '%env(TELEGRAM_API_URL)%'
+    telegram.bot_name: '%env(TELEGRAM_BOT_NAME)%'
+    telegram.bot_token: '%env(TELEGRAM_BOT_TOKEN)%'

@@ -1,0 +1,55 @@
+monolog:
+    channels:
+        - deprecation # Deprecations are logged in the dedicated "deprecation" channel when it exists
+
+when@dev:
+    monolog:
+        handlers:
+            main:
+                type: rotating_file
+                path: '%kernel.logs_dir%/%kernel.environment%.log'
+                level: debug
+                buffer_size: 128
+                max_files: 10
+                formatter: App\Service\Logger\Formatter\JsonFormatter
+            console:
+                type: console
+                process_psr_3_messages: false
+                channels: ["!request", "!deprecation", "!doctrine"]
+                formatter: App\Service\Logger\Formatter\JsonFormatter
+
+when@test:
+    monolog:
+        handlers:
+            main:
+                type: fingers_crossed
+                action_level: error
+                handler: nested
+            nested:
+                type: stream
+                path: "%kernel.logs_dir%/%kernel.environment%.log"
+                level: debug
+                formatter: App\Service\Logger\Formatter\JsonFormatter
+
+when@prod:
+    monolog:
+        handlers:
+            main:
+                type: rotating_file
+                path: '%kernel.logs_dir%/%kernel.environment%.log'
+                handler: nested
+                buffer_size: 128
+                max_files: 10
+            nested:
+                type: stream
+                path: php://stderr
+                formatter: App\Service\Logger\Formatter\JsonFormatter
+            console:
+                type: console
+                process_psr_3_messages: false
+                channels: ["!request", "!deprecation", "!doctrine"]
+                formatter: App\Service\Logger\Formatter\JsonFormatter
+            deprecation:
+                type: stream
+                channels: [deprecation]
+                path: php://stderr
