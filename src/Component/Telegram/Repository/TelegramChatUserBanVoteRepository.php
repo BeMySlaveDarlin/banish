@@ -2,17 +2,16 @@
 
 namespace App\Component\Telegram\Repository;
 
-use App\Component\Common\Entity\ScheduleRuleEntity;
 use App\Component\Telegram\Entity\TelegramChatUserBanVoteEntity;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
  * @extends ServiceEntityRepository<TelegramChatUserBanVoteEntity>
- * @method ScheduleRuleEntity|null find($id, $lockMode = null, $lockVersion = null)
- * @method ScheduleRuleEntity|null findOneBy(array $criteria, array $orderBy = null)
- * @method ScheduleRuleEntity[]    findAll()
- * @method ScheduleRuleEntity[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method TelegramChatUserBanVoteEntity|null find($id, $lockMode = null, $lockVersion = null)
+ * @method TelegramChatUserBanVoteEntity|null findOneBy(array $criteria, array $orderBy = null)
+ * @method TelegramChatUserBanVoteEntity[]    findAll()
+ * @method TelegramChatUserBanVoteEntity[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
 class TelegramChatUserBanVoteRepository extends ServiceEntityRepository
 {

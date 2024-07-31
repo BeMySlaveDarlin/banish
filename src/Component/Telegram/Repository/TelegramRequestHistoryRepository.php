@@ -2,17 +2,16 @@
 
 namespace App\Component\Telegram\Repository;
 
-use App\Component\Common\Entity\ScheduleRuleEntity;
 use App\Component\Telegram\Entity\TelegramRequestHistoryEntity;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
  * @extends ServiceEntityRepository<TelegramRequestHistoryEntity>
- * @method ScheduleRuleEntity|null find($id, $lockMode = null, $lockVersion = null)
- * @method ScheduleRuleEntity|null findOneBy(array $criteria, array $orderBy = null)
- * @method ScheduleRuleEntity[]    findAll()
- * @method ScheduleRuleEntity[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method TelegramRequestHistoryEntity|null find($id, $lockMode = null, $lockVersion = null)
+ * @method TelegramRequestHistoryEntity|null findOneBy(array $criteria, array $orderBy = null)
+ * @method TelegramRequestHistoryEntity[]    findAll()
+ * @method TelegramRequestHistoryEntity[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
 class TelegramRequestHistoryRepository extends ServiceEntityRepository
 {
