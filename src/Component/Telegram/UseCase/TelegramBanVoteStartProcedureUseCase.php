@@ -54,7 +54,7 @@ readonly class TelegramBanVoteStartProcedureUseCase extends TelegramBanStartProc
             $userBan->status = TelegramChatUserBanEntity::STATUS_CANCELED;
         }
 
-        $this->sendVoteMessage($chat, $userBan, $upVotes, $downVotes);
+        $this->sendVoteMessage($chat, $userBan, $upVotes, $downVotes, $limitVotes);
 
         $this->entityManager->persist($userBan);
         $this->entityManager->flush();
@@ -66,7 +66,8 @@ readonly class TelegramBanVoteStartProcedureUseCase extends TelegramBanStartProc
         TelegramChatEntity $chat,
         TelegramChatUserBanEntity $userBan,
         array $upVotes,
-        array $downVotes
+        array $downVotes,
+        int $limitVotes
     ): void {
         $reporter = $this->entityManager
             ->getRepository(TelegramChatUserEntity::class)
@@ -92,11 +93,11 @@ readonly class TelegramBanVoteStartProcedureUseCase extends TelegramBanStartProc
         if ($userBan->isPending()) {
             $keyboard = new TelegramInlineKeyboard();
             $keyboard->addButton(
-                text: sprintf(ResponseMessages::VOTE_BAN_BUTTON_PATTERN, count($upVotes)),
+                text: sprintf(ResponseMessages::VOTE_BAN_BUTTON_PATTERN, count($upVotes), $limitVotes),
                 callbackData: TelegramChatUserBanVoteEntity::TYPE_DO_BAN
             );
             $keyboard->addButton(
-                text: sprintf(ResponseMessages::VOTE_FORGIVE_BUTTON_PATTERN, count($downVotes)),
+                text: sprintf(ResponseMessages::VOTE_FORGIVE_BUTTON_PATTERN, count($downVotes), $limitVotes),
                 callbackData: TelegramChatUserBanVoteEntity::TYPE_FORGIVE
             );
             $replyMarkup->inline_keyboard = $keyboard;

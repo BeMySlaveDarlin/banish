@@ -30,6 +30,10 @@ readonly class TelegramCommandSetVotesLimitUseCase extends AbstractTelegramUseCa
         $options = $chat->options->toArray();
         $option = array_shift($command->options) ?? TelegramChatEntity::DEFAULT_VOTES_REQUIRED;
         $option = is_numeric($option) ? $option : TelegramChatEntity::DEFAULT_VOTES_REQUIRED;
+        if ($options < TelegramChatEntity::DEFAULT_VOTES_REQUIRED) {
+            return sprintf(ResponseMessages::MESSAGE_VOTE_MIN_LIMIT, TelegramChatEntity::DEFAULT_VOTES_REQUIRED);
+        }
+
         $options[TelegramChatEntity::OPTION_BAN_VOTES_REQUIRED] = $option;
         $chat->options = new JsonBValue($options);
         $this->entityManager->persist($chat);

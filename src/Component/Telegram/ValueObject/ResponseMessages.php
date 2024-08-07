@@ -25,8 +25,9 @@ class ResponseMessages
     public const string MESSAGE_SPAM_404 = "User ban procedure failed. Spam message not found";
     public const string MESSAGE_TOGGLE_DELETE_SPAM = "Delete spam message after ban is set to *%s*";
     public const string MESSAGE_VOTE_MAX_LIMIT = "Max number of votes limit is set to *%s*";
+    public const string MESSAGE_VOTE_MIN_LIMIT = "Min number of votes limit must be *%s*";
     public const string START_BAN_PATTERN = "%s requested ban procedure on spammer %s\n";
-    public const string VOTE_BAN_BUTTON_PATTERN = ResponseMessages::EMOJI_BAN . " Ban (%s)";
     public const string VOTE_BAN_PATTERN = "%s voted for *%s*\n";
-    public const string VOTE_FORGIVE_BUTTON_PATTERN = ResponseMessages::EMOJI_FORGIVE . " Forgive (%s)";
+    public const string VOTE_BAN_BUTTON_PATTERN = ResponseMessages::EMOJI_BAN . " Ban (%s/%s)";
+    public const string VOTE_FORGIVE_BUTTON_PATTERN = ResponseMessages::EMOJI_FORGIVE . " Forgive (%s/%s)";
 }

@@ -52,6 +52,7 @@ readonly class TelegramBanStartProcedureUseCase extends AbstractTelegramUseCase
 
     private function sendBanMessage(TelegramChatEntity $chat, TelegramChatUserEntity $user, TelegramMessage $spammerMessage): ?TelegramMessage
     {
+        $limitVotes = $chat->options->get(TelegramChatEntity::OPTION_BAN_VOTES_REQUIRED) ?? TelegramChatEntity::DEFAULT_VOTES_REQUIRED;
         $texts = [
             sprintf(
                 ResponseMessages::START_BAN_PATTERN,
@@ -68,11 +69,11 @@ readonly class TelegramBanStartProcedureUseCase extends AbstractTelegramUseCase
         $data = new TelegramSendMessage($chat->chatId, implode("\n", $texts));
         $keyboard = new TelegramInlineKeyboard();
         $keyboard->addButton(
-            text: sprintf(ResponseMessages::VOTE_BAN_BUTTON_PATTERN, 1),
+            text: sprintf(ResponseMessages::VOTE_BAN_BUTTON_PATTERN, 1, $limitVotes),
             callbackData: TelegramChatUserBanVoteEntity::TYPE_DO_BAN
         );
         $keyboard->addButton(
-            text: sprintf(ResponseMessages::VOTE_FORGIVE_BUTTON_PATTERN, 0),
+            text: sprintf(ResponseMessages::VOTE_FORGIVE_BUTTON_PATTERN, 0, $limitVotes),
             callbackData: TelegramChatUserBanVoteEntity::TYPE_FORGIVE
         );
         $replyMarkup = new TelegramReplyMarkup();
