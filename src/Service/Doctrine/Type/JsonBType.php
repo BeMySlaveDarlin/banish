@@ -12,7 +12,7 @@ use JsonException;
 
 class JsonBType extends Type
 {
-    public const NAME = 'jsonb';
+    public const string NAME = 'jsonb';
 
     public function getName(): string
     {

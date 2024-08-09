@@ -9,7 +9,6 @@ use App\Component\Telegram\Entity\TelegramChatUserBanEntity;
 use App\Component\Telegram\Entity\TelegramChatUserBanVoteEntity;
 use App\Component\Telegram\Entity\TelegramChatUserEntity;
 use App\Component\Telegram\Entity\TelegramRequestHistoryEntity;
-use App\Component\Telegram\Factory\TelegramUpdateFactory;
 use App\Component\Telegram\ValueObject\Bot\TelegramInlineKeyboard;
 use App\Component\Telegram\ValueObject\Bot\TelegramReplyMarkup;
 use App\Component\Telegram\ValueObject\Bot\TelegramSendMessage;
@@ -32,8 +31,8 @@ readonly class TelegramBanStartProcedureUseCase extends AbstractTelegramUseCase
         }
 
         $chatSpammer = $this->apiClientPolicy->getChatMember(
-            (string) $spammerMessage->chat->id,
-            (string) $spammerMessage->from->id
+            $spammerMessage->chat->id,
+            $spammerMessage->from->id
         );
         if (!$chatSpammer || $chatSpammer->isAdmin()) {
             return ResponseMessages::MESSAGE_ADMIN_IS_IMMUNE;
@@ -86,15 +85,16 @@ readonly class TelegramBanStartProcedureUseCase extends AbstractTelegramUseCase
     private function getSpammerMessage(): ?TelegramMessage
     {
         try {
-            if ($this->update->message->isReply()) {
-                return $this->update->message->reply_to_message;
+            if ($this->update->getMessage()->isReply()) {
+                return $this->update->getMessage()->reply_to_message;
             }
 
             $prevHistory = $this->entityManager
                 ->getRepository(TelegramRequestHistoryEntity::class)
                 ->getPreviousMessage(
-                    (string) $this->update->message->chat->id,
-                    (string) $this->update->message->message_id
+                    $this->update->getChat()->id,
+                    $this->update->getFrom()->id,
+                    $this->update->getMessage()->message_id
                 );
 
             if ($prevHistory === null) {
@@ -105,15 +105,14 @@ readonly class TelegramBanStartProcedureUseCase extends AbstractTelegramUseCase
                 return null;
             }
 
-            $data = TelegramUpdateFactory::getData($prevHistory->request->toArray());
-
+            $data = json_encode($prevHistory->request->toArray(), JSON_THROW_ON_ERROR);
             /** @var ?TelegramUpdate $prevUpdate */
             $prevUpdate = $this->serializer->deserialize($data, TelegramUpdate::class, 'json');
-            if ($prevUpdate->message->from->username === $this->configPolicy->botName) {
+            if ($prevUpdate->getFrom()->username === $this->configPolicy->botName) {
                 return null;
             }
 
-            return $prevUpdate->message;
+            return $prevUpdate->getMessage();
         } catch (Throwable $throwable) {
             return null;
         }
@@ -137,9 +136,9 @@ readonly class TelegramBanStartProcedureUseCase extends AbstractTelegramUseCase
             $userBan = new TelegramChatUserBanEntity();
             $userBan->chatId = $chat->chatId;
             $userBan->reporterId = $user->userId;
-            $userBan->banMessageId = (string) $banMessage->message_id;
-            $userBan->spammerId = (string) $spammerMessage->from->id;
-            $userBan->spamMessageId = (string) $spammerMessage->message_id;
+            $userBan->banMessageId = $banMessage->message_id;
+            $userBan->spammerId = $spammerMessage->from->id;
+            $userBan->spamMessageId = $spammerMessage->message_id;
 
             $this->entityManager->persist($userBan);
             $this->entityManager->flush();
@@ -168,7 +167,7 @@ readonly class TelegramBanStartProcedureUseCase extends AbstractTelegramUseCase
             $userBanVote->chatId = $chat->chatId;
         }
 
-        $userBanVote->vote = (string) $this->update->callback_query_data;
+        $userBanVote->vote = $this->update->callback_query->data ?? TelegramChatUserBanVoteEntity::TYPE_DO_BAN;
         $this->entityManager->persist($userBanVote);
         $this->entityManager->flush();
 

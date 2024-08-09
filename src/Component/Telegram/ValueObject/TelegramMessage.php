@@ -6,13 +6,8 @@ namespace App\Component\Telegram\ValueObject;
 
 class TelegramMessage
 {
-    public int | string $message_id;
+    public int $message_id;
     public int $date;
-    public TelegramMessageChat $chat;
-    public TelegramMessageFrom $from;
-    public ?TelegramMessage $reply_to_message = null;
-    public ?TelegramMessageLink $link_preview_options = null;
-    public ?TelegramMessageCommand $messageCommand = null;
 
     public ?string $text = null;
     /**
@@ -20,9 +15,41 @@ class TelegramMessage
      */
     public ?array $entities = null;
 
+    public TelegramMessageChat $chat;
+    public TelegramMessageFrom $from;
+    public ?TelegramMessageFrom $left_chat_member = null;
+    public ?TelegramMessageFrom $left_chat_participant = null;
+    public ?TelegramMessageFrom $new_chat_member = null;
+    public ?TelegramMessageFrom $new_chat_participant = null;
+    public ?TelegramMessage $reply_to_message = null;
+    public ?TelegramMessageLink $link_preview_options = null;
+    public ?TelegramMessageSticker $sticker = null;
+    public ?TelegramMessageDocument $document = null;
+    public ?TelegramMessageCommand $messageCommand = null;
+
+    public function getLeftChatMember(): ?TelegramMessageFrom
+    {
+        return $this->left_chat_member ?? $this->left_chat_participant ?? null;
+    }
+
+    public function getJoinChatMember(): ?TelegramMessageFrom
+    {
+        return $this->new_chat_member ?? $this->new_chat_participant ?? null;
+    }
+
     public function isLink(): bool
     {
         return $this->link_preview_options !== null;
+    }
+
+    public function isSticker(): bool
+    {
+        return $this->sticker !== null;
+    }
+
+    public function isDocument(): bool
+    {
+        return $this->document !== null;
     }
 
     public function isReply(): bool
@@ -73,6 +100,7 @@ class TelegramMessage
             foreach ($parts as &$part) {
                 $part = trim($part);
             }
+            unset($part);
 
             $this->messageCommand = new TelegramMessageCommand($command, $parts);
         }

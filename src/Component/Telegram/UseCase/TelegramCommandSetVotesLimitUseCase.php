@@ -22,7 +22,7 @@ readonly class TelegramCommandSetVotesLimitUseCase extends AbstractTelegramUseCa
             return ResponseMessages::MESSAGE_NO_ACCESS;
         }
 
-        $command = $this->update->message->getCommand($this->configPolicy->botName);
+        $command = $this->update->getMessage()->getCommand($this->configPolicy->botName);
         if (null === $command) {
             return ResponseMessages::MESSAGE_COMMAND_404;
         }
@@ -39,9 +39,13 @@ readonly class TelegramCommandSetVotesLimitUseCase extends AbstractTelegramUseCa
         $this->entityManager->persist($chat);
         $this->entityManager->flush();
 
-        $text = sprintf(ResponseMessages::MESSAGE_VOTE_MAX_LIMIT, $option);
-        $data = new TelegramSendMessage($chat->chatId, $text);
-        $this->apiClientPolicy->sendMessage($data);
+        $text = sprintf(ResponseMessages::MESSAGE_VOTE_MAX_LIMIT, $chat->name, $option);
+        $data = new TelegramSendMessage($this->update->getFrom()->id, $text);
+
+        $message = $this->apiClientPolicy->sendMessage($data);
+        if ($message && $message->message_id) {
+            $this->apiClientPolicy->deleteMessage($chat->chatId, $this->update->message->message_id);
+        }
 
         return $text;
     }

@@ -23,11 +23,11 @@ readonly class TelegramBanVoteStartProcedureUseCase extends TelegramBanStartProc
         }
 
         $supportedCallbackData = [TelegramChatUserBanVoteEntity::TYPE_DO_BAN, TelegramChatUserBanVoteEntity::TYPE_FORGIVE];
-        if (!in_array((string) $this->update->callback_query_data, $supportedCallbackData, true)) {
+        if (!in_array((string) $this->update->callback_query->data, $supportedCallbackData, true)) {
             return ResponseMessages::MESSAGE_NOT_SUPPORTED_CB;
         }
 
-        $userBan = $this->getUserBan($chat, $this->update->message);
+        $userBan = $this->getUserBan($chat, $this->update->getMessage());
         if (null === $userBan) {
             return ResponseMessages::MESSAGE_BAN_404;
         }
@@ -67,7 +67,7 @@ readonly class TelegramBanVoteStartProcedureUseCase extends TelegramBanStartProc
         TelegramChatUserBanEntity $userBan,
         array $upVotes,
         array $downVotes,
-        int $limitVotes
+        int | string $limitVotes
     ): void {
         $reporter = $this->entityManager
             ->getRepository(TelegramChatUserEntity::class)

@@ -12,6 +12,6 @@ readonly class TelegramUnsupportedUseCase extends AbstractTelegramUseCase
 {
     public function handleUpdate(TelegramChatEntity $chat, TelegramChatUserEntity $user): string
     {
-        return ResponseMessages::MESSAGE_NOT_SUPPORTED_UPD;
+        return ResponseMessages::MESSAGE_NOT_IMPLEMENTED;
     }
 }

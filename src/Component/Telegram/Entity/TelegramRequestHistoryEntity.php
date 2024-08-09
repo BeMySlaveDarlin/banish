@@ -34,16 +34,16 @@ class TelegramRequestHistoryEntity
     public string $id;
 
     #[Column(name: 'chat_id', type: Types::BIGINT, length: 255)]
-    public string $chatId;
+    public int $chatId;
 
     #[Column(name: 'from_id', type: Types::BIGINT, length: 255)]
-    public string $fromId;
+    public int $fromId;
 
     #[Column(name: 'message_id', type: Types::BIGINT, length: 255)]
-    public string $messageId;
+    public int $messageId;
 
     #[Column(name: 'update_id', type: Types::BIGINT, length: 255)]
-    public string $updateId;
+    public int $updateId;
 
     #[Column(type: JsonBType::NAME, nullable: true)]
     public ?JsonBValue $request = null;

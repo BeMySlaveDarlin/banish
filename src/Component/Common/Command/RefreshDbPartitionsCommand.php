@@ -14,8 +14,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'app:common:refresh-db-partitions')]
 class RefreshDbPartitionsCommand extends AbstractConsoleCommand
 {
-    protected static $defaultName = 'app:common:refresh-db-partitions';
-
     protected function configure(): void
     {
         $this->setDescription('Refresh Db Partitions');

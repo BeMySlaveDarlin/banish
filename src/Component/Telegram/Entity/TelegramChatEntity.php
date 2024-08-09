@@ -38,7 +38,7 @@ class TelegramChatEntity
     public string $id;
 
     #[Column(name: 'chat_id', type: Types::BIGINT, length: 255)]
-    public string $chatId;
+    public int $chatId;
 
     #[Column(type: Types::STRING, length: 255)]
     public string $type;

@@ -6,7 +6,7 @@ namespace App\Component\Telegram\ValueObject;
 
 class TelegramMessageChat
 {
-    public int | string $id;
+    public int $id;
     public string $type;
     public ?string $title = null;
     public ?string $username = null;

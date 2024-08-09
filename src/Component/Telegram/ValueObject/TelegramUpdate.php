@@ -8,21 +8,35 @@ use Symfony\Component\HttpFoundation\Request;
 
 class TelegramUpdate
 {
-    public TelegramMessage $message;
     public int $update_id;
-    public ?string $callback_query_id = null;
-    public ?string $callback_query_data = null;
+    public ?TelegramMessage $message = null;
+    public ?TelegramCallbackQuery $callback_query = null;
     public ?Request $request = null;
+
+    public function getChat(): TelegramMessageChat
+    {
+        return $this->getMessage()->chat ?? new TelegramMessageChat();
+    }
+
+    public function getFrom(): TelegramMessageFrom
+    {
+        return $this->message->from ?? $this->callback_query->from ?? new TelegramMessageFrom();
+    }
+
+    public function getMessage(): TelegramMessage
+    {
+        return $this->message ?? $this->callback_query->message ?? new TelegramMessage();
+    }
 
     public function isCallbackQuery(): bool
     {
-        return $this->callback_query_id !== null && $this->callback_query_data !== null;
+        return $this->callback_query !== null;
     }
 
     public function toArray(): array
     {
         return [
-            'message' => $this->message,
+            'message' => $this->getMessage(),
             'update_id' => $this->update_id,
         ];
     }

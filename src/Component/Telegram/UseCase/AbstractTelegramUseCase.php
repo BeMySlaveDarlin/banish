@@ -50,18 +50,18 @@ abstract readonly class AbstractTelegramUseCase implements NonTransactionalUseCa
         $chat = $this->entityManager
             ->getRepository(TelegramChatEntity::class)
             ->findOneBy([
-                'chatId' => $this->update->message->chat->id,
+                'chatId' => $this->update->getChat()->id,
             ]);
 
         if (null === $chat) {
             $chat = new TelegramChatEntity();
-            $chat->chatId = (string) $this->update->message->chat->id;
-            $chat->type = $this->update->message->chat->type;
+            $chat->chatId = $this->update->getChat()->id;
+            $chat->type = $this->update->getChat()->type;
             $chat->isEnabled = false;
         }
 
         if (empty($chat->name)) {
-            $chat->name = $this->update->message->chat->getAlias();
+            $chat->name = $this->update->getChat()->getAlias();
         }
 
         $this->entityManager->persist($chat);
@@ -75,32 +75,32 @@ abstract readonly class AbstractTelegramUseCase implements NonTransactionalUseCa
         $user = $this->entityManager
             ->getRepository(TelegramChatUserEntity::class)
             ->findOneBy([
-                'chatId' => $this->update->message->chat->id,
-                'userId' => $this->update->message->from->id,
+                'chatId' => $this->update->getChat()->id,
+                'userId' => $this->update->getFrom()->id,
             ]);
 
         if (null === $user) {
             $user = new TelegramChatUserEntity();
-            $user->chatId = (string) $this->update->message->chat->id;
-            $user->userId = (string) $this->update->message->from->id;
+            $user->chatId = $this->update->getChat()->id;
+            $user->userId = $this->update->getFrom()->id;
         }
 
         if (empty($user->name)) {
-            $firstName = $this->update->message->from->first_name;
-            $lastName = $this->update->message->from->last_name;
+            $firstName = $this->update->getFrom()->first_name;
+            $lastName = $this->update->getFrom()->last_name;
             $name = "$firstName $lastName";
             $user->name = trim($name);
         }
         if (empty($user->username)) {
-            $user->username = $this->update->message->from->username;
+            $user->username = $this->update->getFrom()->username;
         }
 
         $chatMember = $this->apiClientPolicy->getChatMember(
-            (string) $this->update->message->chat->id,
-            (string) $this->update->message->from->id
+            $this->update->getChat()->id,
+            $this->update->getFrom()->id
         );
 
-        $user->isBot = $this->update->message->from->is_bot;
+        $user->isBot = $this->update->getFrom()->is_bot;
         $user->isAdmin = $chatMember && $chatMember->isAdmin();
 
         $this->entityManager->persist($user);
@@ -114,18 +114,18 @@ abstract readonly class AbstractTelegramUseCase implements NonTransactionalUseCa
         $requestHistory = $this->entityManager
             ->getRepository(TelegramRequestHistoryEntity::class)
             ->findOneBy([
-                'chatId' => $this->update->message->chat->id,
-                'fromId' => $this->update->message->from->id,
-                'messageId' => $this->update->message->message_id,
+                'chatId' => $this->update->getChat()->id,
+                'fromId' => $this->update->getFrom()->id,
+                'messageId' => $this->update->getMessage()->message_id,
                 'updateId' => $this->update->update_id,
             ]);
 
         if (null === $requestHistory) {
             $requestHistory = new TelegramRequestHistoryEntity();
-            $requestHistory->chatId = (string) $this->update->message->chat->id;
-            $requestHistory->fromId = (string) $this->update->message->from->id;
-            $requestHistory->messageId = (string) $this->update->message->message_id;
-            $requestHistory->updateId = (string) $this->update->update_id;
+            $requestHistory->chatId = $this->update->getChat()->id;
+            $requestHistory->fromId = $this->update->getFrom()->id;
+            $requestHistory->messageId = $this->update->getMessage()->message_id;
+            $requestHistory->updateId = $this->update->update_id;
             $requestHistory->setRequest($this->update->request->toArray());
             $requestHistory->isNew = true;
         }

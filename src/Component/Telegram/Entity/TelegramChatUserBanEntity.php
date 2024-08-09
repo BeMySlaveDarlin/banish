@@ -2,7 +2,6 @@
 
 namespace App\Component\Telegram\Entity;
 
-use App\Component\Platform\Entity\PlatformProductEntity;
 use App\Component\Telegram\Repository\TelegramChatUserBanRepository;
 use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -43,19 +42,19 @@ class TelegramChatUserBanEntity
     public string $id;
 
     #[Column(name: 'chat_id', type: Types::BIGINT, length: 255)]
-    public string $chatId;
+    public int $chatId;
 
     #[Column(name: 'ban_message_id', type: Types::BIGINT, length: 255)]
-    public string $banMessageId;
+    public int $banMessageId;
 
     #[Column(name: 'spam_message_id', type: Types::BIGINT, length: 255)]
-    public string $spamMessageId;
+    public int $spamMessageId;
 
     #[Column(name: 'spammer_user_id', type: Types::BIGINT, length: 255)]
-    public string $spammerId;
+    public int $spammerId;
 
     #[Column(name: 'reporter_user_id', type: Types::BIGINT, length: 255, nullable: true)]
-    public string $reporterId;
+    public int $reporterId;
 
     #[Column(type: Types::STRING, options: ['default' => self::STATUS_PENDING])]
     public string $status;

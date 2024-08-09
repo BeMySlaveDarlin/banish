@@ -20,13 +20,15 @@ class TelegramRequestHistoryRepository extends ServiceEntityRepository
         parent::__construct($registry, TelegramRequestHistoryEntity::class);
     }
 
-    public function getPreviousMessage(string $chatId, string $messageId): ?TelegramRequestHistoryEntity
+    public function getPreviousMessage(int $chatId, int $fromId, int $messageId): ?TelegramRequestHistoryEntity
     {
         return $this->createQueryBuilder('trh')
-            ->where('trh.chatId = :chat_id')
+            ->andWhere('trh.chatId = :chat_id')
+            ->andWhere('trh.fromId != :from_id')
             ->andWhere('trh.messageId < :message_id')
             ->andWhere("JSONB_EXISTS(trh.request, 'callback_query') = false")
             ->setParameter('chat_id', $chatId)
+            ->setParameter('from_id', $fromId)
             ->setParameter('message_id', $messageId)
             ->orderBy('trh.createdAt', 'DESC')
             ->setMaxResults(1)
