@@ -13,11 +13,11 @@ readonly class TelegramCommandHelpUseCase extends AbstractTelegramUseCase
 {
     public function handleUpdate(TelegramChatEntity $chat, TelegramChatUserEntity $user): string
     {
-        if (!$user->isAdmin && !$this->update->message->chat->isPrivate()) {
+        if (!$user->isAdmin && !$this->update->getChat()->isPrivate()) {
             return ResponseMessages::MESSAGE_NO_ACCESS;
         }
 
-        $command = $this->update->message->getCommand($this->configPolicy->botName);
+        $command = $this->update->getMessage()->getCommand($this->configPolicy->botName);
         if (null === $command) {
             return ResponseMessages::MESSAGE_COMMAND_404;
         }

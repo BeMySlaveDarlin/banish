@@ -2,7 +2,6 @@
 
 namespace App\Component\Telegram\Entity;
 
-use App\Component\Platform\Entity\PlatformInstanceEntity;
 use App\Component\Telegram\Repository\TelegramChatUserBanVoteRepository;
 use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
@@ -42,10 +41,10 @@ class TelegramChatUserBanVoteEntity
     public string $banId;
 
     #[Column(name: 'chat_id', type: Types::BIGINT, length: 255)]
-    public string $chatId;
+    public int $chatId;
 
     #[Column(name: 'user_id', type: Types::BIGINT, length: 255)]
-    public string $userId;
+    public int $userId;
 
     #[Column(type: Types::STRING, options: ['default' => self::TYPE_DO_BAN])]
     public string $vote;

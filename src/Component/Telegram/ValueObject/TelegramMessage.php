@@ -6,7 +6,7 @@ namespace App\Component\Telegram\ValueObject;
 
 class TelegramMessage
 {
-    public int | string $message_id;
+    public int $message_id;
     public int $date;
     public TelegramMessageChat $chat;
     public TelegramMessageFrom $from;
@@ -73,6 +73,7 @@ class TelegramMessage
             foreach ($parts as &$part) {
                 $part = trim($part);
             }
+            unset($part);
 
             $this->messageCommand = new TelegramMessageCommand($command, $parts);
         }

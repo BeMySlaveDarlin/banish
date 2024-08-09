@@ -33,10 +33,10 @@ class TelegramChatUserEntity
     public string $id;
 
     #[Column(name: 'chat_id', type: Types::BIGINT, length: 255)]
-    public string $chatId;
+    public int $chatId;
 
     #[Column(name: 'user_id', type: Types::BIGINT, length: 255)]
-    public string $userId;
+    public int $userId;
 
     #[Column(name: 'username', type: Types::STRING, length: 255, nullable: true)]
     public ?string $username = null;

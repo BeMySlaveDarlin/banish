@@ -27,7 +27,7 @@ interface TelegramCommandUseCaseInterface
         ],
         self::COMMAND_SET_DELETE_MESSAGE => [
             'className' => TelegramCommandToggleDeleteMessageUseCase::class,
-            'description' => "Delete spam message after ban accepted.\nDefault: On.\nUsage: `/deleteMessage`\n",
+            'description' => "Delete spam message after ban accepted.\nDefault: On.\nUsage: `/toggleDeleteMessage`\n",
         ],
     ];
 }

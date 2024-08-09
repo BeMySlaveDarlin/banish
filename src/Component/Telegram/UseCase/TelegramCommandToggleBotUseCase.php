@@ -21,9 +21,13 @@ readonly class TelegramCommandToggleBotUseCase extends AbstractTelegramUseCase
         $this->entityManager->persist($chat);
         $this->entityManager->flush();
 
-        $text = sprintf(ResponseMessages::MESSAGE_BOT_STATUS, $chat->isEnabled ? 'Enabled' : 'Disabled');
-        $data = new TelegramSendMessage($chat->chatId, $text);
-        $this->apiClientPolicy->sendMessage($data);
+        $text = sprintf(ResponseMessages::MESSAGE_BOT_STATUS, $chat->name, $chat->isEnabled ? 'Enabled' : 'Disabled');
+        $data = new TelegramSendMessage($this->update->getFrom()->id, $text);
+
+        $message = $this->apiClientPolicy->sendMessage($data);
+        if ($message && $message->message_id) {
+            $this->apiClientPolicy->deleteMessage($chat->chatId, $this->update->message->message_id);
+        }
 
         return $text;
     }

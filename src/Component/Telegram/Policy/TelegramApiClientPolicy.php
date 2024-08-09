@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Component\Telegram\Policy;
 
-use App\Component\Telegram\UseCase\SaveRequestHistoryUseCase;
 use App\Component\Telegram\ValueObject\Bot\TelegramChatMember;
 use App\Component\Telegram\ValueObject\TelegramMessage;
 use Psr\Log\LoggerInterface;
@@ -38,7 +37,7 @@ readonly class TelegramApiClientPolicy
         ]);
     }
 
-    public function getChatMember(string $chatId, string $userId): ?TelegramChatMember
+    public function getChatMember(int $chatId, int $userId): ?TelegramChatMember
     {
         $result = $this->send(self::ACTION_GET_CHAT_MEMBER, [
             'chat_id' => $chatId,
@@ -51,7 +50,7 @@ readonly class TelegramApiClientPolicy
         return $this->serializer->deserialize($result, TelegramChatMember::class, 'json');
     }
 
-    public function banChatMember(string $chatId, string $userId): ?TelegramChatMember
+    public function banChatMember(int $chatId, int $userId): ?TelegramChatMember
     {
         $result = $this->send(self::ACTION_BAN_CHAT_MEMBER, [
             'chat_id' => $chatId,
@@ -64,7 +63,7 @@ readonly class TelegramApiClientPolicy
         return $this->serializer->deserialize($result, TelegramChatMember::class, 'json');
     }
 
-    public function deleteMessage(string $chatId, string $messageId): ?string
+    public function deleteMessage(int $chatId, int $messageId): ?string
     {
         return $this->send(self::ACTION_DELETE_MESSAGE, [
             'chat_id' => $chatId,

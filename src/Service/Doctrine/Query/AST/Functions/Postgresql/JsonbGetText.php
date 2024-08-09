@@ -9,8 +9,8 @@ use Scienta\DoctrineJsonFunctions\Query\AST\Functions\Postgresql\PostgresqlJsonO
  */
 class JsonbGetText extends PostgresqlJsonOperatorFunctionNode
 {
-    public const FUNCTION_NAME = 'JSONB_GET_TEXT';
-    public const OPERATOR = '::JSONB->>';
+    public const string FUNCTION_NAME = 'JSONB_GET_TEXT';
+    public const string OPERATOR = '::JSONB->>';
 
     /** @var string[] */
     protected $requiredArgumentTypes = [self::STRING_PRIMARY_ARG, self::VALUE_ARG];
