@@ -7,7 +7,7 @@ restart: down up
 build:
 	@echo "Building containers"
 	@docker compose --env-file .env build
-up:
+up: clear-cache-all
 	@echo "Starting containers"
 	@docker compose --env-file .env up -d --remove-orphans
 down:
@@ -43,7 +43,7 @@ clear-cache:
 clear-all: clear-cache-all clear-logs-all
 clear-cache-all:
 	@echo "Clearing all cache"
-	@docker exec -it ${APP_NAME}.service.app rm -rf var/cache/*
+	@rm -rf var/cache/*
 clear-logs-all:
 	@echo "Clearing all logs"
-	@docker exec -it ${APP_NAME}.service.app rm -rf var/log/*
+	@rm -rf var/log/*
