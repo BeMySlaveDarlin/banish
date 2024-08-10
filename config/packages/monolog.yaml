@@ -14,6 +14,7 @@ when@dev:
                 formatter: App\Service\Logger\Formatter\JsonFormatter
             console:
                 type: console
+                level: debug
                 process_psr_3_messages: false
                 channels: ["!request", "!deprecation", "!doctrine"]
                 formatter: App\Service\Logger\Formatter\JsonFormatter
@@ -36,16 +37,19 @@ when@prod:
         handlers:
             main:
                 type: rotating_file
+                level: info
                 path: '%kernel.logs_dir%/%kernel.environment%.log'
                 handler: nested
                 buffer_size: 128
                 max_files: 10
             nested:
                 type: stream
+                level: info
                 path: php://stderr
                 formatter: App\Service\Logger\Formatter\JsonFormatter
             console:
                 type: console
+                level: info
                 process_psr_3_messages: false
                 channels: ["!request", "!deprecation", "!doctrine"]
                 formatter: App\Service\Logger\Formatter\JsonFormatter
