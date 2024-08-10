@@ -147,7 +147,7 @@ readonly class TelegramBanVoteStartProcedureUseCase extends TelegramBanStartProc
             );
         }
         if (!$userBan->isPending()) {
-            $texts[] = sprintf("%s is %s", $spammer?->getAlias(), $userBan->isBanned() ? ' banned' : 'not banned');
+            $texts[] = sprintf("%s is %s", $spammer?->getAlias(), $userBan->isBanned() ? 'banned' : 'not banned');
         }
 
         return implode("\n", $texts);

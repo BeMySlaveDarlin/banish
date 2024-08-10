@@ -39,6 +39,10 @@ readonly class TelegramUseCaseFactory
             return new TelegramUnsupportedUseCase(...$arguments);
         }
 
+        if ($update->getMessage()->isEmpty()) {
+            return new TelegramUnsupportedUseCase(...$arguments);
+        }
+
         if ($update->getChat()->isPrivate()) {
             return new TelegramCommandHelpUseCase(...$arguments);
         }
@@ -58,7 +62,7 @@ readonly class TelegramUseCaseFactory
             return new TelegramBanStartProcedureUseCase(...$arguments);
         }
 
-        if ($update->isCallbackQuery() !== null) {
+        if ($update->isCallbackQuery()) {
             return new TelegramBanVoteStartProcedureUseCase(...$arguments);
         }
 

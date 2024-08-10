@@ -108,6 +108,9 @@ readonly class TelegramBanStartProcedureUseCase extends AbstractTelegramUseCase
             $data = json_encode($prevHistory->request->toArray(), JSON_THROW_ON_ERROR);
             /** @var ?TelegramUpdate $prevUpdate */
             $prevUpdate = $this->serializer->deserialize($data, TelegramUpdate::class, 'json');
+            if ($prevUpdate->getMessage()->isEmpty()) {
+                return null;
+            }
             if ($prevUpdate->getFrom()->username === $this->configPolicy->botName) {
                 return null;
             }

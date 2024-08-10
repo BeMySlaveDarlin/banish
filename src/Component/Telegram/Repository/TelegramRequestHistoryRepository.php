@@ -30,7 +30,7 @@ class TelegramRequestHistoryRepository extends ServiceEntityRepository
             ->setParameter('chat_id', $chatId)
             ->setParameter('from_id', $fromId)
             ->setParameter('message_id', $messageId)
-            ->orderBy('trh.createdAt', 'DESC')
+            ->orderBy('trh.message_id', 'DESC')
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
