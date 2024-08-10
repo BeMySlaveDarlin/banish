@@ -21,11 +21,15 @@ class WebhookController extends AbstractApiController
         Request $request,
         #[MapRequestPayload] TelegramUpdate $update
     ): Response {
-        $configPolicy->validateSecret($secret);
-        $update->request = $request;
-        $useCase = $useCaseFactory->getUseCase($update);
-        if ($useCase) {
-            $this->useCaseHandler->handle($useCase);
+        try {
+            $configPolicy->validateSecret($secret);
+            $update->request = $request;
+            $useCase = $useCaseFactory->getUseCase($update);
+            if ($useCase) {
+                $this->useCaseHandler->handle($useCase);
+            }
+        } catch (\Throwable $throwable) {
+            $this->logger->error($throwable->getMessage(), ['request' => $request->toArray()]);
         }
 
         return new Response('OK', Response::HTTP_OK);
