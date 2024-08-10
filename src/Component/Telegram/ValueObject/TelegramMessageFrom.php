@@ -6,12 +6,17 @@ namespace App\Component\Telegram\ValueObject;
 
 class TelegramMessageFrom
 {
-    public int $id;
+    public ?int $id = null;
     public ?string $username = null;
     public ?string $first_name = null;
     public ?string $last_name = null;
     public string $language_code;
     public bool $is_bot = false;
+
+    public function isEmpty(): bool
+    {
+        return $this->id === null;
+    }
 
     public function getAlias(): string
     {

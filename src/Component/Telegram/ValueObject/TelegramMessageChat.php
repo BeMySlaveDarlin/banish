@@ -6,12 +6,17 @@ namespace App\Component\Telegram\ValueObject;
 
 class TelegramMessageChat
 {
-    public int $id;
-    public string $type;
+    public ?int $id = null;
+    public ?string $type = null;
     public ?string $title = null;
     public ?string $username = null;
     public ?string $last_name = null;
     public ?string $first_name = null;
+
+    public function isEmpty(): bool
+    {
+        return $this->id === null;
+    }
 
     public function isPrivate(): bool
     {

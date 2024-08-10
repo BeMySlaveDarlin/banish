@@ -6,8 +6,8 @@ namespace App\Component\Telegram\ValueObject;
 
 class TelegramMessage
 {
-    public int $message_id;
-    public int $date;
+    public ?int $message_id = null;
+    public int $date = 0;
 
     public ?string $text = null;
     /**
@@ -26,6 +26,11 @@ class TelegramMessage
     public ?TelegramMessageSticker $sticker = null;
     public ?TelegramMessageDocument $document = null;
     public ?TelegramMessageCommand $messageCommand = null;
+
+    public function isEmpty(): bool
+    {
+        return $this->message_id === null;
+    }
 
     public function getLeftChatMember(): ?TelegramMessageFrom
     {
