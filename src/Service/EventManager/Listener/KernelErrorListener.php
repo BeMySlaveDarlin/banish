@@ -37,6 +37,7 @@ class KernelErrorListener
 
         $response = new Response('OK', Response::HTTP_OK);
 
+        $event->allowCustomResponseCode();
         $event->setResponse($response);
     }
 }
