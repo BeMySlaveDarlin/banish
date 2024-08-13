@@ -23,7 +23,6 @@ class TelegramMessage
     public ?TelegramMessageFrom $new_chat_participant = null;
     public ?TelegramMessage $reply_to_message = null;
     public ?TelegramMessageLink $link_preview_options = null;
-    public ?TelegramMessageSticker $sticker = null;
     public ?TelegramMessageDocument $document = null;
     public ?TelegramMessageCommand $messageCommand = null;
 
@@ -45,11 +44,6 @@ class TelegramMessage
     public function isLink(): bool
     {
         return $this->link_preview_options !== null;
-    }
-
-    public function isSticker(): bool
-    {
-        return $this->sticker !== null;
     }
 
     public function isDocument(): bool
