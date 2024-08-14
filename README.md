@@ -86,6 +86,14 @@ server.key //private key
 - Run `make` to start build
 - Use `make down` to remove containers and stop application
 
+### Configuring finalized ban proccess deletion
+
+- Check out `public.queue_schedule_rule` table.
+- Change option `rule` for schedule `clear_bot_messages` to desired value:
+    - For `type: cron` you can set cron rule
+    - For `type: every` you can set expressions: 5 seconds, 2 hours, 7 days...
+- Or, if you don't want to delete ban messages, just remove record for schedule `clear_bot_messages`
+
 ## General usage guide
 
 - Create your bot via [@BotFather](https://telegram.me/BotFather) using [Tutorial](https://core.telegram.org/bots/tutorial)
@@ -93,9 +101,15 @@ server.key //private key
 - Add your bot to the chat as administrator
     - Read, Write, Delete messages
     - Reply, Ban users
-- To enable `BANHAMMER!` feature, enable bot in chat via command `/toggleBot`. One more time to disable bot
-- Command `/votesLimit ?` to set max limit `?` of votes, required to ban or forgive user. Default is `3`
-- Command `/deleteMessage` toggles state of message deletion on ban. Works like a switch. Default is `true`
+- Command `/votesLimit ?` to set max limit `?` of votes, required to ban or forgive user. Default is `3` (minimal required also is `3`)
+- Command `/toggleBot` to enable `BANHAMMER!` feature. One more time to disable bot. Default is `false`
+- Command `/toggleDeleteMessage` toggles state of message deletion on ban. Works like a switch. Default is `true`
+
+### Global bot disable
+
+If you want for some reason to disable bot globally
+
+- Use https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/deleteWebhook
 
 ### How to ban?
 
