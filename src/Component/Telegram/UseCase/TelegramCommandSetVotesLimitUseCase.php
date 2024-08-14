@@ -22,7 +22,7 @@ readonly class TelegramCommandSetVotesLimitUseCase extends AbstractTelegramUseCa
             return ResponseMessages::MESSAGE_NO_ACCESS;
         }
 
-        $command = $this->update->getMessage()->getCommand($this->configPolicy->botName);
+        $command = $this->update->getMessageObj()->getCommand($this->configPolicy->botName);
         if (null === $command) {
             return ResponseMessages::MESSAGE_COMMAND_404;
         }

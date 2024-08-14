@@ -27,7 +27,7 @@ readonly class TelegramBanVoteStartProcedureUseCase extends TelegramBanStartProc
             return ResponseMessages::MESSAGE_NOT_SUPPORTED_CB;
         }
 
-        $userBan = $this->getUserBan($chat, $this->update->getMessage());
+        $userBan = $this->getUserBan($chat, $this->update->getMessageObj());
         if (null === $userBan) {
             return ResponseMessages::MESSAGE_BAN_404;
         }

@@ -39,7 +39,7 @@ readonly class TelegramUseCaseFactory
             return new TelegramUnsupportedUseCase(...$arguments);
         }
 
-        if ($update->getMessage()->isEmpty()) {
+        if ($update->getMessageObj()->isEmpty()) {
             return new TelegramUnsupportedUseCase(...$arguments);
         }
 
@@ -47,8 +47,8 @@ readonly class TelegramUseCaseFactory
             return new TelegramCommandHelpUseCase(...$arguments);
         }
 
-        if ($update->getMessage()->isBotCommand()) {
-            $command = $update->getMessage()->getCommand($this->configPolicy->botName);
+        if ($update->getMessageObj()->isBotCommand()) {
+            $command = $update->getMessageObj()->getCommand($this->configPolicy->botName);
             if (null === $command || !isset(TelegramCommandUseCaseInterface::COMMANDS_MAP[$command->command])) {
                 return new TelegramUnsupportedUseCase(...$arguments);
             }
@@ -58,11 +58,11 @@ readonly class TelegramUseCaseFactory
             return new $commandClass(...$arguments);
         }
 
-        if ($update->getMessage()->isBotMention($this->configPolicy->botName)) {
+        if ($update->getMessageObj()->hasBotMention($this->configPolicy->botName)) {
             return new TelegramBanStartProcedureUseCase(...$arguments);
         }
 
-        if ($update->isCallbackQuery()) {
+        if ($update->hasCallbackQueryData()) {
             return new TelegramBanVoteStartProcedureUseCase(...$arguments);
         }
 

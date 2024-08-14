@@ -14,12 +14,12 @@ class TelegramMyChatMember
     public ?TelegramMessageFrom $old_chat_member = null;
     public ?TelegramMessageFrom $new_chat_member = null;
 
-    public function getOldChatMember(): ?TelegramMessageFrom
+    public function getOldChatMemberFrom(): ?TelegramMessageFrom
     {
         return $this->old_chat_member ?? null;
     }
 
-    public function getJoinChatMember(): ?TelegramMessageFrom
+    public function getJoinChatMemberFrom(): ?TelegramMessageFrom
     {
         return $this->new_chat_member ?? null;
     }

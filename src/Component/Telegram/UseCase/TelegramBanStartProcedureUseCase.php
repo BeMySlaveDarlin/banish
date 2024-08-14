@@ -85,8 +85,8 @@ readonly class TelegramBanStartProcedureUseCase extends AbstractTelegramUseCase
     private function getSpammerMessage(): ?TelegramMessage
     {
         try {
-            if ($this->update->getMessage()->isReply()) {
-                return $this->update->getMessage()->reply_to_message;
+            if ($this->update->getMessageObj()->hasReply()) {
+                return $this->update->getMessageObj()->reply_to_message;
             }
 
             $prevHistory = $this->entityManager
@@ -94,7 +94,7 @@ readonly class TelegramBanStartProcedureUseCase extends AbstractTelegramUseCase
                 ->getPreviousMessage(
                     $this->update->getChat()->id,
                     $this->update->getFrom()->id,
-                    $this->update->getMessage()->message_id
+                    $this->update->getMessageObj()->message_id
                 );
 
             if ($prevHistory === null) {
@@ -108,14 +108,14 @@ readonly class TelegramBanStartProcedureUseCase extends AbstractTelegramUseCase
             $data = json_encode($prevHistory->request->toArray(), JSON_THROW_ON_ERROR);
             /** @var ?TelegramUpdate $prevUpdate */
             $prevUpdate = $this->serializer->deserialize($data, TelegramUpdate::class, 'json');
-            if ($prevUpdate->getMessage()->isEmpty()) {
+            if ($prevUpdate->getMessageObj()->isEmpty()) {
                 return null;
             }
             if ($prevUpdate->getFrom()->username === $this->configPolicy->botName) {
                 return null;
             }
 
-            return $prevUpdate->getMessage();
+            return $prevUpdate->getMessageObj();
         } catch (Throwable $throwable) {
             return null;
         }

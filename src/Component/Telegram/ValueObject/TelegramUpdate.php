@@ -17,20 +17,20 @@ class TelegramUpdate
 
     public function getChat(): TelegramMessageChat
     {
-        return $this->getMessage()->chat ?? $this->my_chat_member->chat ?? new TelegramMessageChat();
+        return $this->getMessageObj()->chat ?? $this->my_chat_member->chat ?? new TelegramMessageChat();
     }
 
     public function getFrom(): TelegramMessageFrom
     {
-        return $this->callback_query->from ?? $this->getMessage()->from ?? $this->my_chat_member->from ?? new TelegramMessageFrom();
+        return $this->callback_query->from ?? $this->getMessageObj()->from ?? $this->my_chat_member->from ?? new TelegramMessageFrom();
     }
 
-    public function getMessage(): TelegramMessage
+    public function getMessageObj(): TelegramMessage
     {
         return $this->callback_query->message ?? $this->edited_message ?? $this->message ?? new TelegramMessage();
     }
 
-    public function isCallbackQuery(): bool
+    public function hasCallbackQueryData(): bool
     {
         return $this->callback_query !== null;
     }
@@ -38,7 +38,7 @@ class TelegramUpdate
     public function toArray(): array
     {
         return [
-            'message' => $this->getMessage(),
+            'message' => $this->getMessageObj(),
             'update_id' => $this->update_id,
         ];
     }

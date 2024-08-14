@@ -116,7 +116,7 @@ abstract readonly class AbstractTelegramUseCase implements NonTransactionalUseCa
             ->findOneBy([
                 'chatId' => $this->update->getChat()->id,
                 'fromId' => $this->update->getFrom()->id,
-                'messageId' => $this->update->getMessage()->message_id,
+                'messageId' => $this->update->getMessageObj()->message_id,
                 'updateId' => $this->update->update_id,
             ]);
 
@@ -124,7 +124,7 @@ abstract readonly class AbstractTelegramUseCase implements NonTransactionalUseCa
             $requestHistory = new TelegramRequestHistoryEntity();
             $requestHistory->chatId = $this->update->getChat()->id;
             $requestHistory->fromId = $this->update->getFrom()->id;
-            $requestHistory->messageId = $this->update->getMessage()->message_id;
+            $requestHistory->messageId = $this->update->getMessageObj()->message_id;
             $requestHistory->updateId = $this->update->update_id;
             $requestHistory->setRequest($this->update->request->toArray());
             $requestHistory->isNew = true;
