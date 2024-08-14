@@ -7,7 +7,7 @@ restart: down up
 build:
 	@echo "Building containers"
 	@docker compose --env-file .env build
-up: clear-cache-all
+up: clear-cache-all cleanup-updates
 	@echo "Starting containers"
 	@docker compose --env-file .env up -d --remove-orphans
 down:
@@ -22,7 +22,7 @@ composer-update:
 chmod-var-dir:
 	@echo "Settings on var dir"
 	@sudo touch /var/supervisor.pid
-	@sudo chmod -R 777 var
+	@sudo chmod -R 0777 var
 
 db-migrate:
 	@echo "Running database migrations"
@@ -36,6 +36,9 @@ db-migration-rollback:
 refresh-partitions:
 	@echo "Running refresh partitions"
 	@docker exec -it ${APP_NAME}.service.app php bin/console --no-interaction app:refresh-game-history-partitions
+cleanup-updates:
+	@echo "Running refresh partitions"
+	@docker exec -it ${APP_NAME}.service.app php bin/console --no-interaction app:telegram:clear-updates
 
 clear-cache:
 	@echo "Clearing global cache"

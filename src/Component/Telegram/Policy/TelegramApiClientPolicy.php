@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Component\Telegram\Policy;
 
 use App\Component\Telegram\ValueObject\Bot\TelegramChatMember;
+use App\Component\Telegram\ValueObject\Bot\TelegramWebHookInfo;
 use App\Component\Telegram\ValueObject\TelegramMessage;
+use App\Component\Telegram\ValueObject\TelegramUpdate;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\HttpFoundation\Exception\BadRequestException;
@@ -15,6 +17,10 @@ use Throwable;
 
 readonly class TelegramApiClientPolicy
 {
+    public const string ACTION_GET_WEBHOOK_INFO = '/getWebhookInfo';
+    public const string ACTION_DELETE_WEBHOOK = '/deleteWebhook';
+    public const string ACTION_GET_UPDATES = '/getUpdates';
+    public const string ACTION_SET_WEBHOOK = '/setWebhook';
     public const string ACTION_GET_CHAT_MEMBER = '/getChatMember';
     public const string ACTION_BAN_CHAT_MEMBER = '/banChatMember';
     public const string ACTION_SEND_MESSAGE = '/sendMessage';
@@ -35,6 +41,49 @@ readonly class TelegramApiClientPolicy
                 'Content-Type' => 'application/json',
             ],
         ]);
+    }
+
+    public function getWebhookInfo(): ?TelegramWebHookInfo
+    {
+        $result = $this->send(self::ACTION_GET_WEBHOOK_INFO, []);
+        if (empty($result)) {
+            return null;
+        }
+
+        return $this->serializer->deserialize($result, TelegramWebHookInfo::class, 'json');
+    }
+
+    public function deleteWebhook(): bool
+    {
+        $result = $this->send(self::ACTION_DELETE_WEBHOOK, []);
+        if (empty($result)) {
+            return false;
+        }
+
+        return $result === 'true';
+    }
+
+    public function setWebhook(string $url): bool
+    {
+        $result = $this->send(self::ACTION_SET_WEBHOOK, ['url' => $url]);
+        if (empty($result)) {
+            return false;
+        }
+
+        return $result === 'true';
+    }
+
+    /**
+     * @return null|TelegramUpdate[]
+     */
+    public function getUpdates(array $params = []): ?array
+    {
+        $result = $this->send(self::ACTION_GET_UPDATES, $params);
+        if (empty($result)) {
+            return null;
+        }
+
+        return $this->serializer->deserialize($result, 'App\Component\Telegram\ValueObject\TelegramUpdate[]', 'json');
     }
 
     public function getChatMember(int $chatId, int $userId): ?TelegramChatMember
