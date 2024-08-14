@@ -34,6 +34,7 @@ class TelegramChatUserBanEntity
     public const string STATUS_PENDING = 'pending';
     public const string STATUS_BANNED = 'banned';
     public const string STATUS_CANCELED = 'canceled';
+    public const string STATUS_DELETED = 'deleted';
 
     #[Id]
     #[GeneratedValue(strategy: "SEQUENCE")]

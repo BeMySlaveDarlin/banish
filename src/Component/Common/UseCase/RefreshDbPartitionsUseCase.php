@@ -21,7 +21,7 @@ class RefreshDbPartitionsUseCase implements NonTransactionalUseCaseInterface
     public function execute(): void
     {
         $now = new DateTimeImmutable();
-        $prevMonth = $now->sub(new DateInterval('P1M'));
+        $prevMonth = $now->sub(new DateInterval('P3M'));
         $nextMonth = $now->add(new DateInterval('P3M'));
 
         $tables = $this->parameters->get('app.partitioned_tables');

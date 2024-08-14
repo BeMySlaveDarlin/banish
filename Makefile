@@ -2,12 +2,12 @@ include .env
 
 ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
-all: build up composer-install db-migrate chmod-var-dir
+all: build up composer-install db-migrate var-preps cleanup-updates
 restart: down up
 build:
 	@echo "Building containers"
 	@docker compose --env-file .env build
-up: clear-cache-all cleanup-updates
+up: clear-cache-all
 	@echo "Starting containers"
 	@docker compose --env-file .env up -d --remove-orphans
 down:
@@ -19,10 +19,10 @@ composer-install:
 composer-update:
 	@echo "Running composer update"
 	@docker exec -it ${APP_NAME}.service.app composer update
-chmod-var-dir:
+var-preps:
 	@echo "Settings on var dir"
 	@sudo touch /var/supervisor.pid
-	@sudo chmod -R 0777 var
+	@sudo chmod -R 777 var/*
 
 db-migrate:
 	@echo "Running database migrations"
