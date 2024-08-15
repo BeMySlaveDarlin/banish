@@ -20,7 +20,7 @@ class TelegramRequestHistoryRepository extends ServiceEntityRepository
         parent::__construct($registry, TelegramRequestHistoryEntity::class);
     }
 
-    public function getPreviousMessage(int $chatId, int $fromId, int $messageId): ?TelegramRequestHistoryEntity
+    public function findPreviousMessage(int $chatId, int $fromId, int $messageId): ?TelegramRequestHistoryEntity
     {
         return $this->createQueryBuilder('trh')
             ->andWhere('trh.chatId = :chat_id')

@@ -2,12 +2,12 @@ include .env
 
 ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
-all: build up composer-install db-migrate var-preps cleanup-updates
+all: clear-cache-all build up composer-install db-migrate var-preps cleanup-updates
 restart: down up
 build:
 	@echo "Building containers"
 	@docker compose --env-file .env build
-up: clear-cache-all
+up:
 	@echo "Starting containers"
 	@docker compose --env-file .env up -d --remove-orphans
 down:
@@ -26,23 +26,23 @@ var-preps:
 
 db-migrate:
 	@echo "Running database migrations"
-	@docker exec -it ${APP_NAME}.service.app php bin/console --no-interaction doctrine:migration:migrate
+	@docker exec -it -u www-data  ${APP_NAME}.service.app php bin/console --no-interaction doctrine:migration:migrate
 db-migration-generate:
 	@echo "Running database migration generate"
-	@docker exec -it ${APP_NAME}.service.app php bin/console --no-interaction doctrine:migration:generate
+	@docker exec -it -u www-data  ${APP_NAME}.service.app php bin/console --no-interaction doctrine:migration:generate
 db-migration-rollback:
 	@echo "Running database migration rollback"
-	@docker exec -it ${APP_NAME}.service.app php bin/console --no-interaction doctrine:migrations:migrate prev
+	@docker exec -it -u www-data  ${APP_NAME}.service.app php bin/console --no-interaction doctrine:migrations:migrate prev
 refresh-partitions:
 	@echo "Running refresh partitions"
-	@docker exec -it ${APP_NAME}.service.app php bin/console --no-interaction app:refresh-game-history-partitions
+	@docker exec -it -u www-data  ${APP_NAME}.service.app php bin/console --no-interaction app:refresh-game-history-partitions
 cleanup-updates:
 	@echo "Running refresh partitions"
-	@docker exec -it ${APP_NAME}.service.app php bin/console --no-interaction app:telegram:clear-updates
+	@docker exec -it -u www-data  ${APP_NAME}.service.app php bin/console --no-interaction app:telegram:clear-updates
 
 clear-cache:
 	@echo "Clearing global cache"
-	@docker exec -it ${APP_NAME}.service.app php bin/console --no-interaction cache:pool:clear cache.global_clearer
+	@docker exec -it -u www-data  ${APP_NAME}.service.app php bin/console --no-interaction cache:pool:clear cache.global_clearer
 clear-all: clear-cache-all clear-logs-all
 clear-cache-all:
 	@echo "Clearing all cache"

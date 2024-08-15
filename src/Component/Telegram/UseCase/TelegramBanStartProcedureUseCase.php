@@ -91,7 +91,7 @@ readonly class TelegramBanStartProcedureUseCase extends AbstractTelegramUseCase
 
             $prevHistory = $this->entityManager
                 ->getRepository(TelegramRequestHistoryEntity::class)
-                ->getPreviousMessage(
+                ->findPreviousMessage(
                     $this->update->getChat()->id,
                     $this->update->getFrom()->id,
                     $this->update->getMessageObj()->message_id

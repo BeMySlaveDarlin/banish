@@ -3,6 +3,7 @@
 namespace App\Component\Telegram\Repository;
 
 use App\Component\Telegram\Entity\TelegramChatUserBanEntity;
+use DateTimeImmutable;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -18,5 +19,16 @@ class TelegramChatUserBanRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, TelegramChatUserBanEntity::class);
+    }
+
+    public function findOldPending(string $status, DateTimeImmutable $date): array
+    {
+        return $this->createQueryBuilder('tcub')
+            ->andWhere('tcub.status = :status')
+            ->andWhere('tcub.updatedAt <= :updatedAt')
+            ->setParameter('status', $status)
+            ->setParameter('updatedAt', $date)
+            ->getQuery()
+            ->getResult();
     }
 }

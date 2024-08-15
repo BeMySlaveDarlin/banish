@@ -9,7 +9,7 @@ use App\Component\Telegram\Policy\TelegramApiClientPolicy;
 use App\Service\UseCase\NonTransactionalUseCaseInterface;
 use Doctrine\ORM\EntityManagerInterface;
 
-class ClearBotMessagesUseCase implements NonTransactionalUseCaseInterface
+readonly class ClearBotMessagesUseCase implements NonTransactionalUseCaseInterface
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
@@ -19,12 +19,17 @@ class ClearBotMessagesUseCase implements NonTransactionalUseCaseInterface
 
     public function execute(): void
     {
-        $userBans = $this->entityManager
-            ->getRepository(TelegramChatUserBanEntity::class)
-            ->findBy([
-                'status' => [TelegramChatUserBanEntity::STATUS_CANCELED, TelegramChatUserBanEntity::STATUS_BANNED],
-            ]);
+        $userBans = $this->getFinished();
+        $this->clearBans($userBans);
 
+        $userBans = $this->getOldPending();
+        $this->clearBans($userBans);
+
+        $this->entityManager->flush();
+    }
+
+    private function clearBans(array $userBans): void
+    {
         foreach ($userBans as $userBan) {
             try {
                 $this->apiClientPolicy->deleteMessage($userBan->chatId, $userBan->banMessageId);
@@ -34,7 +39,23 @@ class ClearBotMessagesUseCase implements NonTransactionalUseCaseInterface
             $userBan->status = TelegramChatUserBanEntity::STATUS_DELETED;
             $this->entityManager->persist($userBan);
         }
+    }
 
-        $this->entityManager->flush();
+    private function getFinished(): array
+    {
+        return $this->entityManager
+            ->getRepository(TelegramChatUserBanEntity::class)
+            ->findBy([
+                'status' => [TelegramChatUserBanEntity::STATUS_CANCELED, TelegramChatUserBanEntity::STATUS_BANNED],
+            ]);
+    }
+
+    private function getOldPending(): array
+    {
+        $date = (new \DateTimeImmutable())->sub(new \DateInterval('PT10M'));
+
+        return $this->entityManager
+            ->getRepository(TelegramChatUserBanEntity::class)
+            ->findOldPending(TelegramChatUserBanEntity::STATUS_PENDING, $date);
     }
 }
