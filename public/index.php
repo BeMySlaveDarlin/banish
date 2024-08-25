@@ -1,7 +1,6 @@
 <?php
 
 use App\Kernel;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
@@ -18,8 +17,5 @@ try {
         ? $throwable->getStatusCode()
         : Response::HTTP_INTERNAL_SERVER_ERROR;
 
-    (new JsonResponse([
-        'error' => true,
-        'message' => $throwable->getMessage(),
-    ], $code))->send();
+    return new Response('OK', Response::HTTP_OK);
 }

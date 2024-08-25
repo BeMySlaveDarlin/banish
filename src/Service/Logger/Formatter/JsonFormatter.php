@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Service\Logger\Formatter;
 
-use App\Service\Logger\FormatContextTrait;
 use App\Service\Metrics\RequestMetrics;
 use Monolog\Formatter\FormatterInterface;
 use Monolog\LogRecord;
@@ -12,8 +11,6 @@ use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 class JsonFormatter implements FormatterInterface
 {
-    use FormatContextTrait;
-
     public function __construct(
         private ParameterBagInterface $params,
         private RequestMetrics $requestMetrics
@@ -44,5 +41,20 @@ class JsonFormatter implements FormatterInterface
         }
 
         return $records;
+    }
+
+    public function formatContext(array $context): array
+    {
+        $metricsTimestamps = $this->requestMetrics->getMetrics();
+        $metricsContext = $this->requestMetrics->getContext();
+
+        $context['app'] = $this->params->get('app.name');
+        $context['env'] = $this->params->get('app.env');
+
+        $context['rid'] = $metricsContext['request_id'] ?? null;
+        $context['uri'] = $context['uri'] ?? $metricsContext['uri'] ?? null;
+        $context['metrics'] = $context['metrics'] ?? $metricsTimestamps;
+
+        return $context;
     }
 }

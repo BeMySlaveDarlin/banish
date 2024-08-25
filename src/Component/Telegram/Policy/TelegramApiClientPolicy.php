@@ -36,7 +36,7 @@ readonly class TelegramApiClientPolicy
         private TelegramConfigPolicy $configPolicy
     ) {
         $this->httpClient = HttpClient::create([
-            'timeout' => 10,
+            'timeout' => 30,
             'headers' => [
                 'Content-Type' => 'application/json',
             ],
@@ -50,7 +50,11 @@ readonly class TelegramApiClientPolicy
             return null;
         }
 
-        return $this->serializer->deserialize($result, TelegramWebHookInfo::class, 'json');
+        return $this->serializer->deserialize(
+            $result,
+            TelegramWebHookInfo::class,
+            'json'
+        );
     }
 
     public function deleteWebhook(): bool
@@ -83,7 +87,11 @@ readonly class TelegramApiClientPolicy
             return null;
         }
 
-        return $this->serializer->deserialize($result, 'App\Component\Telegram\ValueObject\TelegramUpdate[]', 'json');
+        return $this->serializer->deserialize(
+            $result,
+            'App\Component\Telegram\ValueObject\TelegramUpdate[]',
+            'json'
+        );
     }
 
     public function getChatMember(int $chatId, int $userId): ?TelegramChatMember
@@ -96,7 +104,11 @@ readonly class TelegramApiClientPolicy
             return null;
         }
 
-        return $this->serializer->deserialize($result, TelegramChatMember::class, 'json');
+        return $this->serializer->deserialize(
+            $result,
+            TelegramChatMember::class,
+            'json'
+        );
     }
 
     public function banChatMember(int $chatId, int $userId): ?TelegramChatMember
@@ -109,7 +121,11 @@ readonly class TelegramApiClientPolicy
             return null;
         }
 
-        return $this->serializer->deserialize($result, TelegramChatMember::class, 'json');
+        return $this->serializer->deserialize(
+            $result,
+            TelegramChatMember::class,
+            'json'
+        );
     }
 
     public function deleteMessage(int $chatId, int $messageId): ?string
@@ -137,7 +153,11 @@ readonly class TelegramApiClientPolicy
             return null;
         }
 
-        return $this->serializer->deserialize($result, TelegramMessage::class, 'json');
+        return $this->serializer->deserialize(
+            $result,
+            TelegramMessage::class,
+            'json'
+        );
     }
 
     private function send(string $action, mixed $params = null): ?string

@@ -12,7 +12,7 @@ framework:
 
     serializer:
         default_context:
-            enable_max_depth: true
+            enable_max_depth: false
 
     php_errors:
         log: true

@@ -42,6 +42,7 @@ when@prod:
                 handler: nested
                 buffer_size: 128
                 max_files: 10
+                formatter: App\Service\Logger\Formatter\JsonFormatter
             nested:
                 type: stream
                 level: info

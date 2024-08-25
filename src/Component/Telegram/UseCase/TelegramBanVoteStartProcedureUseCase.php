@@ -9,6 +9,7 @@ use App\Component\Telegram\Entity\TelegramChatUserBanEntity;
 use App\Component\Telegram\Entity\TelegramChatUserBanVoteEntity;
 use App\Component\Telegram\Entity\TelegramChatUserEntity;
 use App\Component\Telegram\ValueObject\Bot\TelegramEditMessage;
+use App\Component\Telegram\ValueObject\Bot\TelegramEditReplyMarkup;
 use App\Component\Telegram\ValueObject\Bot\TelegramInlineKeyboard;
 use App\Component\Telegram\ValueObject\Bot\TelegramReplyMarkup;
 use App\Component\Telegram\ValueObject\ResponseMessages;
@@ -84,12 +85,11 @@ readonly class TelegramBanVoteStartProcedureUseCase extends TelegramBanStartProc
             ]);
 
         $text = $this->getText($userBan, $reporter, $spammer, $upVotes, $downVotes);
-        $data = new TelegramEditMessage($chat->chatId, $userBan->banMessageId, $text);
-        $this->apiClientPolicy->editMessageText($data);
+        $message = new TelegramEditMessage($chat->chatId, $userBan->banMessageId, $text);
+        $this->apiClientPolicy->editMessageText($message);
 
         $replyMarkup = new TelegramReplyMarkup();
-        $data->reply_markup = $replyMarkup;
-
+        $rmk = new TelegramEditReplyMarkup($chat->chatId, $userBan->banMessageId, $replyMarkup);
         if ($userBan->isPending()) {
             $keyboard = new TelegramInlineKeyboard();
             $keyboard->addButton(
@@ -102,8 +102,7 @@ readonly class TelegramBanVoteStartProcedureUseCase extends TelegramBanStartProc
             );
             $replyMarkup->inline_keyboard = $keyboard;
         }
-
-        $this->apiClientPolicy->editMessageKb($data);
+        $this->apiClientPolicy->editMessageKb($rmk);
     }
 
     private function banUserAndDeleteSpamMessage(
