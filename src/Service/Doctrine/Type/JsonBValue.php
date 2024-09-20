@@ -20,9 +20,9 @@ class JsonBValue implements JsonSerializable, Stringable
         return $this->data;
     }
 
-    public function get(mixed $key = null)
+    public function get(mixed $key = null, mixed $default = null): mixed
     {
-        return $this->data[$key] ?? null;
+        return $this->data[$key] ?? $default;
     }
 
     public function has(mixed $key = null): bool

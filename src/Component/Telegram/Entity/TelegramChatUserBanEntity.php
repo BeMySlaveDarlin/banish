@@ -48,8 +48,8 @@ class TelegramChatUserBanEntity
     #[Column(name: 'ban_message_id', type: Types::BIGINT, length: 255)]
     public int $banMessageId;
 
-    #[Column(name: 'spam_message_id', type: Types::BIGINT, length: 255)]
-    public int $spamMessageId;
+    #[Column(name: 'spam_message_id', type: Types::BIGINT, length: 255, nullable: true)]
+    public ?int $spamMessageId = null;
 
     #[Column(name: 'spammer_user_id', type: Types::BIGINT, length: 255)]
     public int $spammerId;

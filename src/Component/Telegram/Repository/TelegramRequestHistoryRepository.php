@@ -22,7 +22,8 @@ class TelegramRequestHistoryRepository extends ServiceEntityRepository
 
     public function findPreviousMessage(int $chatId, int $fromId, int $messageId): ?TelegramRequestHistoryEntity
     {
-        return $this->createQueryBuilder('trh')
+        return $this
+            ->createQueryBuilder('trh')
             ->andWhere('trh.chatId = :chat_id')
             ->andWhere('trh.fromId != :from_id')
             ->andWhere('trh.messageId < :message_id')
@@ -30,7 +31,7 @@ class TelegramRequestHistoryRepository extends ServiceEntityRepository
             ->setParameter('chat_id', $chatId)
             ->setParameter('from_id', $fromId)
             ->setParameter('message_id', $messageId)
-            ->orderBy('trh.message_id', 'DESC')
+            ->orderBy('trh.messageId', 'DESC')
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();

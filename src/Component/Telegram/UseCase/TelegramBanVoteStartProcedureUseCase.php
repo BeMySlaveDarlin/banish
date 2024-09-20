@@ -23,8 +23,9 @@ readonly class TelegramBanVoteStartProcedureUseCase extends TelegramBanStartProc
             return ResponseMessages::MESSAGE_BOT_DISABLED;
         }
 
-        $supportedCallbackData = [TelegramChatUserBanVoteEntity::TYPE_DO_BAN, TelegramChatUserBanVoteEntity::TYPE_FORGIVE];
-        if (!in_array((string) $this->update->callback_query->data, $supportedCallbackData, true)) {
+        $supportedCallbackData =
+            [TelegramChatUserBanVoteEntity::TYPE_DO_BAN, TelegramChatUserBanVoteEntity::TYPE_FORGIVE];
+        if (!in_array((string)$this->update->callback_query->data, $supportedCallbackData, true)) {
             return ResponseMessages::MESSAGE_NOT_SUPPORTED_CB;
         }
 
@@ -37,7 +38,9 @@ readonly class TelegramBanVoteStartProcedureUseCase extends TelegramBanStartProc
 
         $upVotes = [];
         $downVotes = [];
-        $limitVotes = $chat->options->get(TelegramChatEntity::OPTION_BAN_VOTES_REQUIRED) ?? TelegramChatEntity::DEFAULT_VOTES_REQUIRED;
+        $limitVotes = $chat->options->get(TelegramChatEntity::OPTION_BAN_VOTES_REQUIRED)
+                      ??
+                      TelegramChatEntity::DEFAULT_VOTES_REQUIRED;
         foreach ($userBan->votes as $vote) {
             if ($vote->vote === TelegramChatUserBanVoteEntity::TYPE_DO_BAN) {
                 $upVotes[] = $vote->user->getAlias();
@@ -101,8 +104,8 @@ readonly class TelegramBanVoteStartProcedureUseCase extends TelegramBanStartProc
                 callbackData: TelegramChatUserBanVoteEntity::TYPE_FORGIVE
             );
             $replyMarkup->inline_keyboard = $keyboard;
+            $this->apiClientPolicy->editMessageKb($rmk);
         }
-        $this->apiClientPolicy->editMessageKb($rmk);
     }
 
     private function banUserAndDeleteSpamMessage(
@@ -116,7 +119,9 @@ readonly class TelegramBanVoteStartProcedureUseCase extends TelegramBanStartProc
             return;
         }
 
-        $this->apiClientPolicy->deleteMessage($chat->chatId, $userBan->spamMessageId);
+        if ($userBan->spamMessageId) {
+            $this->apiClientPolicy->deleteMessage($chat->chatId, $userBan->spamMessageId);
+        }
     }
 
     private function getText(

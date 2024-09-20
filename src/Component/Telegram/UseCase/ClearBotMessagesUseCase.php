@@ -8,10 +8,12 @@ use App\Component\Telegram\Entity\TelegramChatUserBanEntity;
 use App\Component\Telegram\Policy\TelegramApiClientPolicy;
 use App\Service\UseCase\NonTransactionalUseCaseInterface;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 
 readonly class ClearBotMessagesUseCase implements NonTransactionalUseCaseInterface
 {
     public function __construct(
+        private LoggerInterface $logger,
         private EntityManagerInterface $entityManager,
         private TelegramApiClientPolicy $apiClientPolicy
     ) {
@@ -33,9 +35,10 @@ readonly class ClearBotMessagesUseCase implements NonTransactionalUseCaseInterfa
         foreach ($userBans as $userBan) {
             try {
                 $this->apiClientPolicy->deleteMessage($userBan->chatId, $userBan->banMessageId);
-            } catch (\Throwable $exception) {
-                //Suppress old messages deletion errors
+            } catch (\Throwable $throwable) {
+                $this->logger->info($throwable->getMessage(), ['userBan' => $userBan]);
             }
+
             $userBan->status = TelegramChatUserBanEntity::STATUS_DELETED;
             $this->entityManager->persist($userBan);
         }

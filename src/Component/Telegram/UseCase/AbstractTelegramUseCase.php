@@ -9,20 +9,33 @@ use App\Component\Telegram\Entity\TelegramChatUserEntity;
 use App\Component\Telegram\Entity\TelegramRequestHistoryEntity;
 use App\Component\Telegram\Policy\TelegramApiClientPolicy;
 use App\Component\Telegram\Policy\TelegramConfigPolicy;
+use App\Component\Telegram\Policy\TelegramSpammerMessageFactory;
 use App\Component\Telegram\ValueObject\TelegramUpdate;
 use App\Service\UseCase\NonTransactionalUseCaseInterface;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 
 abstract readonly class AbstractTelegramUseCase implements NonTransactionalUseCaseInterface
 {
+    protected TelegramSpammerMessageFactory $spammerMessageFactory;
+
     public function __construct(
+        protected LoggerInterface $logger,
         protected EntityManagerInterface $entityManager,
         protected SerializerInterface $serializer,
         protected TelegramConfigPolicy $configPolicy,
         protected TelegramApiClientPolicy $apiClientPolicy,
         protected TelegramUpdate $update
     ) {
+        $this->spammerMessageFactory = new TelegramSpammerMessageFactory(
+            $logger,
+            $entityManager,
+            $serializer,
+            $configPolicy,
+            $apiClientPolicy,
+            $update
+        );
     }
 
     abstract public function handleUpdate(TelegramChatEntity $chat, TelegramChatUserEntity $user): string;

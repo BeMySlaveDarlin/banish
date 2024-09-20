@@ -9,4 +9,5 @@ class TelegramMessageEntity
     public string $type;
     public int $length;
     public int $offset;
+    public array $user = [];
 }

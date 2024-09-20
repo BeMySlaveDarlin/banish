@@ -187,7 +187,7 @@ readonly class TelegramApiClientPolicy
 
             $json = json_decode($content, true, 512, JSON_THROW_ON_ERROR);
             if (!isset($json['ok']) || !$json['ok']) {
-                throw new BadRequestException('Error response state');
+                throw new BadRequestException($json['description'] ?? 'Error response state');
             }
 
             $this->logger->info('Telegram API request sent', [

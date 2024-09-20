@@ -19,4 +19,16 @@ class TelegramChatUserRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, TelegramChatUserEntity::class);
     }
+
+    public function findUserByName(int $chatId, string $name): ?TelegramChatUserEntity
+    {
+        return $this
+            ->createQueryBuilder('u')
+            ->where('u.chatId = :chatId')
+            ->andWhere('(u.username = :username OR u.name = :username OR u.userId = :username)')
+            ->setParameter('chatId', $chatId)
+            ->setParameter('username', $name)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }

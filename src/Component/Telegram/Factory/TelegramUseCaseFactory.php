@@ -14,11 +14,13 @@ use App\Component\Telegram\UseCase\TelegramUnsupportedUseCase;
 use App\Component\Telegram\ValueObject\TelegramUpdate;
 use App\Service\UseCase\UseCaseInterface;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 
 readonly class TelegramUseCaseFactory
 {
     public function __construct(
+        private LoggerInterface $logger,
         private EntityManagerInterface $entityManager,
         private SerializerInterface $serializer,
         private TelegramConfigPolicy $configPolicy,
@@ -29,6 +31,7 @@ readonly class TelegramUseCaseFactory
     public function getUseCase(TelegramUpdate $update): ?UseCaseInterface
     {
         $arguments = [
+            'logger' => $this->logger,
             'entityManager' => $this->entityManager,
             'serializer' => $this->serializer,
             'configPolicy' => $this->configPolicy,

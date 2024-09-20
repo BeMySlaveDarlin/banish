@@ -9,8 +9,7 @@ class TelegramSendMessage
     public function __construct(
         public int $chat_id,
         public string $text,
-        public TelegramReplyMarkup | array $reply_markup = [],
-        public string $parse_mode = 'Markdown'
+        public TelegramReplyMarkup | array $reply_markup = []
     ) {
         if (empty($this->reply_markup)) {
             $this->reply_markup = new TelegramReplyMarkup();

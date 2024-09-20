@@ -65,17 +65,47 @@ class TelegramMessage
 
     public function hasBotMention(string $botName): bool
     {
+        if (!str_contains($this->text, $botName)) {
+            return false;
+        }
+
         if (empty($this->entities)) {
             return false;
         }
 
         foreach ($this->entities as $entity) {
-            if ($entity->type === 'mention' && stripos($this->text, $botName) !== false) {
+            if ($entity->type === 'mention') {
                 return true;
             }
         }
 
         return false;
+    }
+
+    public function hasUserMention(string $botName): bool
+    {
+        return !empty($this->getUserMention($botName));
+    }
+
+    public function getUserMention(string $botName): ?string
+    {
+        if (empty($this->entities)) {
+            return null;
+        }
+
+        foreach ($this->entities as $entity) {
+            if ($entity->type === 'text_mention') {
+                return (string)$entity->user['id'];
+            }
+        }
+
+        $text = str_replace($botName, '', $this->text);
+        if (!str_contains($text, '@')) {
+            return null;
+        }
+        $text = str_replace('@', '', $text);
+
+        return trim($text, " \n\r\t\v\0\s");
     }
 
     public function isBotCommand(): bool

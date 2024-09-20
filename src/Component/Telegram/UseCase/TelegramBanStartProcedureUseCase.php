@@ -8,13 +8,11 @@ use App\Component\Telegram\Entity\TelegramChatEntity;
 use App\Component\Telegram\Entity\TelegramChatUserBanEntity;
 use App\Component\Telegram\Entity\TelegramChatUserBanVoteEntity;
 use App\Component\Telegram\Entity\TelegramChatUserEntity;
-use App\Component\Telegram\Entity\TelegramRequestHistoryEntity;
 use App\Component\Telegram\ValueObject\Bot\TelegramInlineKeyboard;
 use App\Component\Telegram\ValueObject\Bot\TelegramReplyMarkup;
 use App\Component\Telegram\ValueObject\Bot\TelegramSendMessage;
 use App\Component\Telegram\ValueObject\ResponseMessages;
 use App\Component\Telegram\ValueObject\TelegramMessage;
-use App\Component\Telegram\ValueObject\TelegramUpdate;
 use Throwable;
 
 readonly class TelegramBanStartProcedureUseCase extends AbstractTelegramUseCase
@@ -49,9 +47,15 @@ readonly class TelegramBanStartProcedureUseCase extends AbstractTelegramUseCase
         return ResponseMessages::MESSAGE_BAN_STARTED;
     }
 
-    private function sendBanMessage(TelegramChatEntity $chat, TelegramChatUserEntity $user, TelegramMessage $spammerMessage): ?TelegramMessage
-    {
-        $limitVotes = $chat->options->get(TelegramChatEntity::OPTION_BAN_VOTES_REQUIRED) ?? TelegramChatEntity::DEFAULT_VOTES_REQUIRED;
+    private function sendBanMessage(
+        TelegramChatEntity $chat,
+        TelegramChatUserEntity $user,
+        TelegramMessage $spammerMessage
+    ): ?TelegramMessage {
+        $limitVotes = $chat->options->get(
+            TelegramChatEntity::OPTION_BAN_VOTES_REQUIRED,
+            TelegramChatEntity::DEFAULT_VOTES_REQUIRED
+        );
         $texts = [
             sprintf(
                 ResponseMessages::START_BAN_PATTERN,
@@ -85,39 +89,17 @@ readonly class TelegramBanStartProcedureUseCase extends AbstractTelegramUseCase
     private function getSpammerMessage(): ?TelegramMessage
     {
         try {
-            if ($this->update->getMessageObj()->hasReply()) {
-                return $this->update->getMessageObj()->reply_to_message;
+            if ($this->spammerMessageFactory->isReply()) {
+                return $this->spammerMessageFactory->getReplyMessage();
             }
 
-            $prevHistory = $this->entityManager
-                ->getRepository(TelegramRequestHistoryEntity::class)
-                ->findPreviousMessage(
-                    $this->update->getChat()->id,
-                    $this->update->getFrom()->id,
-                    $this->update->getMessageObj()->message_id
-                );
-
-            if ($prevHistory === null) {
-                return null;
+            if ($this->spammerMessageFactory->isUserMention()) {
+                return $this->spammerMessageFactory->getUserMentionedMessage();
             }
 
-            if (!$prevHistory->request->has('message')) {
-                return null;
-            }
-
-            $data = json_encode($prevHistory->request->toArray(), JSON_THROW_ON_ERROR);
-            /** @var ?TelegramUpdate $prevUpdate */
-            $prevUpdate = $this->serializer->deserialize($data, TelegramUpdate::class, 'json');
-            if ($prevUpdate->getMessageObj()->isEmpty()) {
-                return null;
-            }
-            if ($prevUpdate->getFrom()->username === $this->configPolicy->botName) {
-                return null;
-            }
-
-            return $prevUpdate->getMessageObj();
+            return $this->spammerMessageFactory->getPrevMessage();
         } catch (Throwable $throwable) {
-            return null;
+            $this->logger->info($throwable->getMessage(), ['update' => $this->update]);
         }
     }
 
