@@ -65,7 +65,7 @@ class TelegramMessage
 
     public function hasBotMention(string $botName): bool
     {
-        if (!str_contains($this->text, $botName)) {
+        if (mb_stripos($this->text, $botName) !== false) {
             return false;
         }
 
@@ -99,7 +99,7 @@ class TelegramMessage
             }
         }
 
-        $text = str_replace($botName, '', $this->text);
+        $text = str_ireplace($botName, '', $this->text);
         if (!str_contains($text, '@')) {
             return null;
         }
