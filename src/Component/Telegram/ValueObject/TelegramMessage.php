@@ -65,7 +65,7 @@ class TelegramMessage
 
     public function hasBotMention(string $botName): bool
     {
-        if (mb_stripos($this->text, $botName) !== false) {
+        if (stripos($this->text, $botName) === false) {
             return false;
         }
 

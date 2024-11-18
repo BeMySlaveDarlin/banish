@@ -24,6 +24,7 @@ use Doctrine\ORM\Mapping\Table;
 #[Index(columns: ['chat_id'], name: 'idx_telegram_chats_users_bans_chat_id')]
 #[Index(columns: ['ban_message_id'], name: 'idx_telegram_chats_users_bans_ban_message_id')]
 #[Index(columns: ['spam_message_id'], name: 'idx_telegram_chats_users_bans_spam_message_id')]
+#[Index(columns: ['initial_message_id'], name: 'idx_telegram_chats_users_bans_initial_message_id')]
 #[Index(columns: ['spammer_user_id'], name: 'idx_telegram_chats_users_bans_spammer_user_id')]
 #[Index(columns: ['reporter_user_id'], name: 'idx_telegram_chats_users_bans_reporter_user_id')]
 #[Index(columns: ['status'], name: 'idx_telegram_chats_users_bans_status')]
@@ -50,6 +51,9 @@ class TelegramChatUserBanEntity
 
     #[Column(name: 'spam_message_id', type: Types::BIGINT, length: 255, nullable: true)]
     public ?int $spamMessageId = null;
+
+    #[Column(name: 'initial_message_id', type: Types::BIGINT, length: 255, nullable: true)]
+    public ?int $initialMessageId = null;
 
     #[Column(name: 'spammer_user_id', type: Types::BIGINT, length: 255)]
     public int $spammerId;

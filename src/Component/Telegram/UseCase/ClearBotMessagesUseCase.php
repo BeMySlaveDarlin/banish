@@ -35,6 +35,9 @@ readonly class ClearBotMessagesUseCase implements NonTransactionalUseCaseInterfa
         foreach ($userBans as $userBan) {
             try {
                 $this->apiClientPolicy->deleteMessage($userBan->chatId, $userBan->banMessageId);
+                if (!empty($userBan->initialMessageId)) {
+                    $this->apiClientPolicy->deleteMessage($userBan->chatId, $userBan->initialMessageId);
+                }
             } catch (\Throwable $throwable) {
                 $this->logger->info($throwable->getMessage(), ['userBan' => $userBan]);
             }
@@ -44,6 +47,9 @@ readonly class ClearBotMessagesUseCase implements NonTransactionalUseCaseInterfa
         }
     }
 
+    /**
+     * @return TelegramChatUserBanEntity[]
+     */
     private function getFinished(): array
     {
         return $this->entityManager
@@ -53,6 +59,10 @@ readonly class ClearBotMessagesUseCase implements NonTransactionalUseCaseInterfa
             ]);
     }
 
+    /**
+     * @return TelegramChatUserBanEntity[]
+     * @throws \DateInvalidOperationException
+     */
     private function getOldPending(): array
     {
         $date = (new \DateTimeImmutable())->sub(new \DateInterval('PT10M'));

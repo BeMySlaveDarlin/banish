@@ -2,3 +2,4 @@ parameters:
     telegram.api_url: '%env(TELEGRAM_API_URL)%'
     telegram.bot_name: '%env(TELEGRAM_BOT_NAME)%'
     telegram.bot_token: '%env(TELEGRAM_BOT_TOKEN)%'
+    telegram.min_messages_for_trust: '%env(TELEGRAM_MIN_MESSAGES_FOR_TRUST)%'

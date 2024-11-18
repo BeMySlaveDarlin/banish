@@ -8,6 +8,7 @@ use App\Component\Telegram\Entity\TelegramChatEntity;
 use App\Component\Telegram\Entity\TelegramChatUserBanEntity;
 use App\Component\Telegram\Entity\TelegramChatUserBanVoteEntity;
 use App\Component\Telegram\Entity\TelegramChatUserEntity;
+use App\Component\Telegram\Entity\TelegramRequestHistoryEntity;
 use App\Component\Telegram\ValueObject\Bot\TelegramInlineKeyboard;
 use App\Component\Telegram\ValueObject\Bot\TelegramReplyMarkup;
 use App\Component\Telegram\ValueObject\Bot\TelegramSendMessage;
@@ -34,6 +35,11 @@ readonly class TelegramBanStartProcedureUseCase extends AbstractTelegramUseCase
         );
         if (!$chatSpammer || $chatSpammer->isAdmin()) {
             return ResponseMessages::MESSAGE_ADMIN_IS_IMMUNE;
+        }
+        if ($this->checkUserIsTrusted($chat->chatId, $chatSpammer->user->id)) {
+            $this->logger->warning('Trusted');
+
+            return ResponseMessages::MESSAGE_USER_IS_TRUSTED;
         }
 
         $banMessage = $this->sendBanMessage($chat, $user, $spammerMessage);
@@ -124,12 +130,25 @@ readonly class TelegramBanStartProcedureUseCase extends AbstractTelegramUseCase
             $userBan->banMessageId = $banMessage->message_id;
             $userBan->spammerId = $spammerMessage->from->id;
             $userBan->spamMessageId = $spammerMessage->message_id;
+            $userBan->initialMessageId = $this->update->getMessageObj()->message_id ?? null;
 
             $this->entityManager->persist($userBan);
             $this->entityManager->flush();
         }
 
         return $userBan;
+    }
+
+    protected function checkUserIsTrusted(int $chatId, int $userId): bool
+    {
+        $countMessages = $this->entityManager
+            ->getRepository(TelegramRequestHistoryEntity::class)
+            ->countMessagesByFromId(
+                $chatId,
+                $userId
+            );
+
+        return $countMessages >= $this->configPolicy->minMessagesForTrust;
     }
 
     protected function findOrCreateUserBanVote(

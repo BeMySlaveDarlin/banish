@@ -10,8 +10,8 @@ use Doctrine\Persistence\ManagerRegistry;
  * @extends ServiceEntityRepository<TelegramRequestHistoryEntity>
  * @method TelegramRequestHistoryEntity|null find($id, $lockMode = null, $lockVersion = null)
  * @method TelegramRequestHistoryEntity|null findOneBy(array $criteria, array $orderBy = null)
- * @method TelegramRequestHistoryEntity[]    findAll()
- * @method TelegramRequestHistoryEntity[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method TelegramRequestHistoryEntity[] findAll()
+ * @method TelegramRequestHistoryEntity[] findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
 class TelegramRequestHistoryRepository extends ServiceEntityRepository
 {
@@ -35,5 +35,18 @@ class TelegramRequestHistoryRepository extends ServiceEntityRepository
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    public function countMessagesByFromId(int $chatId, int $fromId): int
+    {
+        return (int)$this
+            ->createQueryBuilder('trh')
+            ->select('COUNT(trh.id)')
+            ->andWhere('trh.chatId = :chat_id')
+            ->andWhere('trh.fromId = :from_id')
+            ->setParameter('chat_id', $chatId)
+            ->setParameter('from_id', $fromId)
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 }

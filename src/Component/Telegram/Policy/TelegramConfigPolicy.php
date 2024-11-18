@@ -20,6 +20,8 @@ readonly class TelegramConfigPolicy
         public string $botName,
         #[Autowire(param: 'telegram.bot_token')]
         public string $botToken,
+        #[Autowire(param: 'telegram.min_messages_for_trust')]
+        public string $minMessagesForTrust,
     ) {
     }
 

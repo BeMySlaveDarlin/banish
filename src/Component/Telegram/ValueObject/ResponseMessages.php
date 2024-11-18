@@ -22,6 +22,7 @@ class ResponseMessages
     public const string MESSAGE_NO_ACCESS = "Access denied";
     public const string MESSAGE_PROCESSED = "Processed";
     public const string MESSAGE_ADMIN_IS_IMMUNE = "Admin is immune";
+    public const string MESSAGE_USER_IS_TRUSTED = "User is trusted";
     public const string MESSAGE_SPAM_404 = "User ban procedure failed. Spam message not found";
     public const string MESSAGE_TOGGLE_DELETE_SPAM = "Delete spam message after ban for chat %s is set to %s";
     public const string MESSAGE_VOTE_MAX_LIMIT = "Max number of votes limit for chat %s is set to %s";
