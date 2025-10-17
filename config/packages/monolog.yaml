@@ -11,13 +11,13 @@ when@dev:
                 level: debug
                 buffer_size: 128
                 max_files: 10
-                formatter: App\Service\Logger\Formatter\JsonFormatter
+                formatter: App\Infrastructure\Logger\Formatter\JsonFormatter
             console:
                 type: console
                 level: debug
                 process_psr_3_messages: false
                 channels: ["!request", "!deprecation", "!doctrine"]
-                formatter: App\Service\Logger\Formatter\JsonFormatter
+                formatter: App\Infrastructure\Logger\Formatter\JsonFormatter
 
 when@test:
     monolog:
@@ -30,7 +30,7 @@ when@test:
                 type: stream
                 path: "%kernel.logs_dir%/%kernel.environment%.log"
                 level: debug
-                formatter: App\Service\Logger\Formatter\JsonFormatter
+                formatter: App\Infrastructure\Logger\Formatter\JsonFormatter
 
 when@prod:
     monolog:
@@ -42,18 +42,18 @@ when@prod:
                 handler: nested
                 buffer_size: 128
                 max_files: 10
-                formatter: App\Service\Logger\Formatter\JsonFormatter
+                formatter: App\Infrastructure\Logger\Formatter\JsonFormatter
             nested:
                 type: stream
                 level: info
                 path: php://stderr
-                formatter: App\Service\Logger\Formatter\JsonFormatter
+                formatter: App\Infrastructure\Logger\Formatter\JsonFormatter
             console:
                 type: console
                 level: info
                 process_psr_3_messages: false
                 channels: ["!request", "!deprecation", "!doctrine"]
-                formatter: App\Service\Logger\Formatter\JsonFormatter
+                formatter: App\Infrastructure\Logger\Formatter\JsonFormatter
             deprecation:
                 type: stream
                 channels: [deprecation]

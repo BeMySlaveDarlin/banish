@@ -4,9 +4,9 @@ ARG APP_PORT
 ARG TIMEZONE
 ARG COMPOSER_VERSION
 
-RUN apt-get update && apt-get install -y \
-    gnupg g++ git procps openssl mc nano make acl \
-    curl wget unzip gettext software-properties-common \
+RUN apt update && apt install -y \
+    apt-utils gnupg g++ git procps openssl  \
+    mc nano make acl curl wget unzip gettext \
     zlib1g-dev libzip-dev libonig-dev libxslt1-dev \
     libicu-dev libpq-dev libmemcached-dev libmemcached11
 

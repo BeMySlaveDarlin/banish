@@ -16,6 +16,15 @@ services:
     _defaults:
         autowire: true
         autoconfigure: true
+        bind:
+            string $botName: '%telegram.bot_name%'
+            string $botToken: '%telegram.bot_token%'
+            string $apiUrl: '%telegram.api_url%'
+            string $appSecret: '%app.secret%'
+
+    _instanceof:
+        App\Infrastructure\Telegram\Routing\Registry\RouteRegistryInterface:
+            tags: ['telegram.route_registry']
 
     App\:
         resource: '../src/'
@@ -25,4 +34,24 @@ services:
             - '../src/Component/*/*/Entity/'
             - '../src/Component/*/*/UseCase/'
             - '../src/Component/*/*/ValueObject/'
-            - '../src/Service/Doctrine/Type/'
+            - '../src/Domain/*/Entity/'
+            - '../src/Domain/*/Enum/'
+            - '../src/Domain/*/ValueObject/'
+            - '../src/Application/Command/'
+
+    Psr\Container\ContainerInterface: '@service_container'
+
+    App\Application\Handler\:
+        resource: '../src/Application/Handler'
+        public: true
+
+    App\Infrastructure\Telegram\Routing\Router:
+        arguments:
+            $botName: '%telegram.bot_name%'
+            $registries: !tagged_iterator telegram.route_registry
+
+    App\Infrastructure\Telegram\Middleware\MiddlewareManager:
+        arguments:
+            $middlewares:
+                - '@App\Infrastructure\Telegram\Middleware\DeduplicationMiddleware'
+                - '@App\Infrastructure\Telegram\Middleware\ChatPersistenceMiddleware'

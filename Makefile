@@ -3,7 +3,7 @@ include .env
 ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
 all: clear-cache-all build up composer-install db-migrate var-preps cleanup-updates
-restart: down up
+restart: clear-all down up
 build:
 	@echo "Building containers"
 	@docker compose --env-file .env build
@@ -50,3 +50,22 @@ clear-cache-all:
 clear-logs-all:
 	@echo "Clearing all logs"
 	@rm -rf var/log/*
+
+# New Architecture Commands
+debug-container:
+	@echo "Checking service container compilation"
+	@docker exec -it -u www-data ${APP_NAME}.service.app php bin/console debug:container --show-arguments
+
+debug-routes:
+	@echo "Checking routes"
+	@docker exec -it -u www-data ${APP_NAME}.service.app php bin/console debug:router
+
+debug-messenger:
+	@echo "Checking messenger configuration"
+	@docker exec -it -u www-data ${APP_NAME}.service.app php bin/console debug:messenger
+
+test-new-arch:
+	@echo "Testing new architecture compilation"
+	@docker exec -it -u www-data ${APP_NAME}.service.app php bin/console cache:clear
+	@docker exec -it -u www-data ${APP_NAME}.service.app php bin/console debug:container App\\Domain\\Telegram
+	@docker exec -it -u www-data ${APP_NAME}.service.app php bin/console debug:container App\\Infrastructure\\Telegram

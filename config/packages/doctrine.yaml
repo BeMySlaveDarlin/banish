@@ -3,7 +3,7 @@ doctrine:
         url: '%env(resolve:DATABASE_URL)%'
         server_version: '15'
         types:
-            jsonb: App\Service\Doctrine\Type\JsonBType
+            jsonb: App\Infrastructure\Doctrine\Type\JsonBType
         mapping_types:
           jsonb: jsonb
         profiling_collect_backtrace: '%kernel.debug%'
@@ -24,10 +24,10 @@ doctrine:
         dql:
             string_functions:
                 JSON_EXTRACT_PATH: Scienta\DoctrineJsonFunctions\Query\AST\Functions\Postgresql\JsonExtractPath
-                JSONB_EXTRACT_PATH: App\Service\Doctrine\Query\AST\Functions\Postgresql\JsonbExtractPath
+                JSONB_EXTRACT_PATH: App\Infrastructure\Doctrine\Query\AST\Functions\Postgresql\JsonbExtractPath
                 JSON_GET: Scienta\DoctrineJsonFunctions\Query\AST\Functions\Postgresql\JsonGet
                 JSON_GET_TEXT: Scienta\DoctrineJsonFunctions\Query\AST\Functions\Postgresql\JsonGetText
-                JSONB_GET_TEXT: App\Service\Doctrine\Query\AST\Functions\Postgresql\JsonbGetText
+                JSONB_GET_TEXT: App\Infrastructure\Doctrine\Query\AST\Functions\Postgresql\JsonbGetText
                 JSON_GET_PATH: Scienta\DoctrineJsonFunctions\Query\AST\Functions\Postgresql\JsonGetPath
                 JSON_GET_PATH_TEXT: Scienta\DoctrineJsonFunctions\Query\AST\Functions\Postgresql\JsonGetPathText
                 JSONB_EXISTS: Scienta\DoctrineJsonFunctions\Query\AST\Functions\Postgresql\JsonbExists

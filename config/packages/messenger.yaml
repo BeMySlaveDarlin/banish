@@ -1,18 +1,22 @@
 framework:
     messenger:
-        # Uncomment this (and the failed transport below) to send failed messages to this transport for later handling.
         failure_transport: failed
+
+        buses:
+            messenger.bus.default:
+                middleware:
+                    - doctrine_transaction
 
         transports:
             async: '%env(MESSENGER_TRANSPORT_DSN)%'
             sync: 'in-memory://'
             failed:
                 dsn: 'doctrine://default?queue_name=failed'
+            scheduler_partitions:
+                dsn: 'doctrine://default?queue_name=scheduler_partitions'
+            scheduler_clear_bot_messages:
+                dsn: 'doctrine://default?queue_name=scheduler_clear_bot_messages'
 
-when@test:
-   framework:
-       messenger:
-           transports:
-               # replace with your transport name here (e.g., my_transport: 'in-memory://')
-               # For more Messenger testing tools, see https://github.com/zenstruck/messenger-test
-               async: 'in-memory://'
+        routing:
+            'App\Infrastructure\Scheduler\Common\RefreshDbPartitionsMessage': scheduler_partitions
+            'App\Infrastructure\Scheduler\Telegram\ClearBotMessagesMessage': scheduler_clear_bot_messages

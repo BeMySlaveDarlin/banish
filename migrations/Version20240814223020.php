@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace DoctrineMigrations;
 
-use App\Component\Telegram\Schedule\ClearBotMessagesMessage;
+use App\Infrastructure\Scheduler\Telegram\ClearBotMessagesMessage;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
