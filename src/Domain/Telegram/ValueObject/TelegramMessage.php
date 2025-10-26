@@ -65,7 +65,7 @@ class TelegramMessage
 
     public function hasBotMention(string $botName): bool
     {
-        if (stripos($this->text, $botName) === false) {
+        if ($botName === null || stripos($this->text ?? '', $botName) === false) {
             return false;
         }
 
@@ -95,11 +95,13 @@ class TelegramMessage
 
         foreach ($this->entities as $entity) {
             if ($entity->type === 'text_mention') {
-                return (string)$entity->user['id'];
+                $rawUserId = $entity->user['id'] ?? '';
+                $userId = is_int($rawUserId) ? (string) $rawUserId : $rawUserId;
+                return is_string($userId) ? $userId : '';
             }
         }
 
-        $text = str_ireplace($botName, '', $this->text);
+        $text = str_ireplace($botName, '', $this->text ?? '');
         if (!str_contains($text, '@')) {
             return null;
         }
@@ -130,7 +132,7 @@ class TelegramMessage
         }
 
         if (null === $this->messageCommand) {
-            $filtered = str_ireplace("@$botName", '', $this->text);
+            $filtered = str_ireplace("@$botName", '', $this->text ?? '');
             $parts = explode(' ', $filtered);
             $command = array_shift($parts);
             foreach ($parts as &$part) {

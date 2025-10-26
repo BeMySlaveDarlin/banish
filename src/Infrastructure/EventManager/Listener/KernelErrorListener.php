@@ -14,7 +14,7 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 class KernelErrorListener
 {
     public function __construct(
-        private LoggerInterface $logger
+        private readonly LoggerInterface $logger
     ) {
     }
 

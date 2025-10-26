@@ -8,6 +8,7 @@ use JsonSerializable;
 
 class TelegramInlineKeyboard implements JsonSerializable
 {
+    /** @var array<int, array<string, string>> */
     public array $buttons = [];
 
     public function addButton(
@@ -28,6 +29,9 @@ class TelegramInlineKeyboard implements JsonSerializable
         $this->buttons[] = $button;
     }
 
+    /**
+     * @return array<int, array<int, array<string, string>>>
+     */
     public function jsonSerialize(): array
     {
         return [$this->buttons];

@@ -14,17 +14,36 @@ server {
     add_header Access-Control-Allow-Origin *;
     add_header X-Request-ID $request_id;
 
+    location = /admin {
+        return 301 /admin/;
+    }
+
+    # Serve admin panel static files from frontend dist
+    location /admin/ {
+        alias /var/www/app/frontend/dist/;
+        try_files $uri $uri/ /index.html =404;
+    }
+
     location ~ ^/system/ping.json {
         add_header      Access-Control-Allow-Origin *;
         return 200 '{"data":{"pong":true,"version":"1"},"ttl":0,"state":200}';
         expires epoch;
     }
 
-    if ( $request_uri !~ "xml\.php|index\.php|/landings/.*\.(js|css|png|jpg|jpeg|gif|flv|avi|swf|wav|ico|woff|ttf|mp4|svg|webm|mp3|mp4|ogg)$|/files|crossdomain\.xml|favicon.ico|apc.php|fpm-status|nginx-status|service-worker.js" ) {
+    if ( $request_uri !~ "xml\.php|index\.php|/admin|/landings/.*\.(js|css|png|jpg|jpeg|gif|flv|avi|swf|wav|ico|woff|ttf|mp4|svg|webm|mp3|mp4|ogg)$|/files|crossdomain\.xml|favicon.ico|apc.php|fpm-status|nginx-status|service-worker.js" ) {
         rewrite ^(.+)$ /index.php break;
     }
 
     location / {
+        # Handle CORS preflight requests
+        if ($request_method = 'OPTIONS') {
+            add_header Access-Control-Allow-Origin *;
+            add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS, PATCH";
+            add_header Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With";
+            add_header Content-Length 0;
+            add_header Content-Type text/plain;
+            return 204;
+        }
         try_files $uri /index.php$is_args$args;
     }
 

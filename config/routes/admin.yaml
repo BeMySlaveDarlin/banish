@@ -1,0 +1,77 @@
+admin_auth_login:
+  path: /api/admin/auth/login/{token}
+  controller: App\Presentation\Http\Controller\Api\Admin\AuthController::loginAction
+  methods: GET
+
+admin_auth_validate:
+  path: /api/admin/auth/validate
+  controller: App\Presentation\Http\Controller\Api\Admin\AuthController::validateAction
+  methods: POST
+
+admin_auth_logout:
+  path: /api/admin/auth/logout
+  controller: App\Presentation\Http\Controller\Api\Admin\AuthController::logoutAction
+  methods: GET
+
+admin_chats_list:
+  path: /api/admin/chats
+  controller: App\Presentation\Http\Controller\Api\Admin\ChatsController::listAction
+  methods: GET
+
+admin_config_get:
+  path: /api/admin/chat/{chatId}/config
+  controller: App\Presentation\Http\Controller\Api\Admin\ConfigController::getAction
+  methods: GET
+  requirements:
+    chatId: '-?\d+'
+
+admin_config_update:
+  path: /api/admin/chat/{chatId}/config
+  controller: App\Presentation\Http\Controller\Api\Admin\ConfigController::updateAction
+  methods: POST
+  requirements:
+    chatId: '-?\d+'
+
+admin_info_get:
+  path: /api/admin/chat/{chatId}/info
+  controller: App\Presentation\Http\Controller\Api\Admin\InfoController::getAction
+  methods: GET
+  requirements:
+    chatId: '-?\d+'
+
+admin_users_list:
+  path: /api/admin/chat/{chatId}/users
+  controller: App\Presentation\Http\Controller\Api\Admin\UsersController::listAction
+  methods: GET
+  requirements:
+    chatId: '-?\d+'
+
+admin_users_details:
+  path: /api/admin/chat/{chatId}/users/{userId}
+  controller: App\Presentation\Http\Controller\Api\Admin\UsersController::detailsAction
+  methods: GET
+  requirements:
+    chatId: '-?\d+'
+    userId: '\d+'
+
+admin_users_unban:
+  path: /api/admin/chat/{chatId}/users/{userId}/unban
+  controller: App\Presentation\Http\Controller\Api\Admin\UsersController::unbanAction
+  methods: POST
+  requirements:
+    chatId: '-?\d+'
+    userId: '\d+'
+
+admin_audit_chat_logs:
+  path: /api/admin/chat/{chatId}/audit-logs
+  controller: App\Presentation\Http\Controller\Api\Admin\AuditLogController::chatLogsAction
+  methods: GET
+  requirements:
+    chatId: '-?\d+'
+
+admin_audit_user_logs:
+  path: /api/admin/user/{userId}/audit-logs
+  controller: App\Presentation\Http\Controller\Api\Admin\AuditLogController::userLogsAction
+  methods: GET
+  requirements:
+    userId: '\d+'

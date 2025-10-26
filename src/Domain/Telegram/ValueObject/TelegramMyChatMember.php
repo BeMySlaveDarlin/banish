@@ -7,6 +7,7 @@ namespace App\Domain\Telegram\ValueObject;
 class TelegramMyChatMember
 {
     public int $date;
+    /** @var array<string, mixed>|null */
     public ?array $entities = null;
 
     public TelegramMessageChat $chat;

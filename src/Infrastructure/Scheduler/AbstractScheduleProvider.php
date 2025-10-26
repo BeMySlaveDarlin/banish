@@ -21,13 +21,13 @@ abstract class AbstractScheduleProvider implements ScheduleProviderInterface
         $this->schedule = new Schedule();
     }
 
-    abstract protected function getName();
+    abstract protected function getName(): string;
 
     public function getSchedule(): Schedule
     {
         $query = "SELECT 1 FROM information_schema.tables WHERE table_name = 'queue_schedule_rule' AND table_type = 'BASE TABLE'";
-        $exists = (bool) $this->entityManager->getConnection()->executeQuery($query);
-        if ($exists) {
+        $result = $this->entityManager->getConnection()->executeQuery($query);
+        if ($result->rowCount() > 0) {
             $rules = $this->entityManager
                 ->getRepository(ScheduleRuleEntity::class)
                 ->findBy(['schedule' => $this->getName()]);
@@ -46,8 +46,8 @@ abstract class AbstractScheduleProvider implements ScheduleProviderInterface
     private function getRecurringMessage(ScheduleRuleEntity $entity): ?RecurringMessage
     {
         $messageClass = $entity->message;
-        $options = $entity->options->data;
-        if (empty($options)) {
+        $options = $entity->options?->toArray() ?? ['data' => null];
+        if (empty($options) || empty($options['data'])) {
             $message = new $messageClass();
         } else {
             $message = new $messageClass(...$options);

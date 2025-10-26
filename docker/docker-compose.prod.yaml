@@ -8,8 +8,6 @@ services:
         APP_PORT: ${APP_PORT}
         TIMEZONE: ${TIMEZONE}
         COMPOSER_VERSION: ${COMPOSER_VERSION}
-    volumes:
-      - .:/var/www/app
 
   supervisor:
     build:
@@ -19,11 +17,16 @@ services:
         APP_PORT: ${APP_PORT}
         TIMEZONE: ${TIMEZONE}
         COMPOSER_VERSION: ${COMPOSER_VERSION}
-    volumes:
-      - .:/var/www/app
-      - ./docker/php/supervisor/supervisord.conf:/etc/supervisor/supervisord.conf
-      - ./var/log/supervisor:/var/log/supervisor
 
   nginx:
     build:
       context: ./docker/nginx
+
+  frontend:
+    build:
+      context: .
+      dockerfile: ./docker/node/Dockerfile
+      target: node_prod
+      args:
+        - VITE_API_URL=${VITE_API_URL}
+    ports: []

@@ -2,8 +2,8 @@ include .env
 
 ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
-all: clear-cache-all build up composer-install db-migrate var-preps cleanup-updates
-restart: clear-all down up
+all: clear-all build up composer-install db-migrate var-preps cleanup-updates
+restart: down clear-all all
 build:
 	@echo "Building containers"
 	@docker compose --env-file .env build
@@ -21,7 +21,9 @@ composer-update:
 	@docker exec -it ${APP_NAME}.service.app composer update
 var-preps:
 	@echo "Settings on var dir"
-	@sudo touch /var/supervisor.pid
+	@sudo mkdir -p var/cache
+	@sudo mkdir -p var/log
+	@sudo mkdir -p var/log/supervisor
 	@sudo chmod -R 777 var/*
 
 db-migrate:
@@ -37,35 +39,34 @@ refresh-partitions:
 	@echo "Running refresh partitions"
 	@docker exec -it -u www-data  ${APP_NAME}.service.app php bin/console --no-interaction app:refresh-game-history-partitions
 cleanup-updates:
-	@echo "Running refresh partitions"
+	@echo "Running cleanup updates"
 	@docker exec -it -u www-data  ${APP_NAME}.service.app php bin/console --no-interaction app:telegram:clear-updates
 
+frontend-build:
+	@echo "Building frontend"
+	@docker compose --env-file .env build frontend
+	@docker compose --env-file .env up -d frontend
+
+clear-all: clear-cache clear-logs
 clear-cache:
-	@echo "Clearing global cache"
-	@docker exec -it -u www-data  ${APP_NAME}.service.app php bin/console --no-interaction cache:pool:clear cache.global_clearer
-clear-all: clear-cache-all clear-logs-all
-clear-cache-all:
 	@echo "Clearing all cache"
 	@rm -rf var/cache/*
-clear-logs-all:
+clear-logs:
 	@echo "Clearing all logs"
-	@rm -rf var/log/*
+	@rm -rf var/log/*.log
+	@rm -rf var/log/supervisor/*.log
 
-# New Architecture Commands
-debug-container:
-	@echo "Checking service container compilation"
-	@docker exec -it -u www-data ${APP_NAME}.service.app php bin/console debug:container --show-arguments
+phpstan:
+	@echo "Running PHPStan static analysis"
+	@docker exec -it -u www-data ${APP_NAME}.service.app composer phpstan
 
-debug-routes:
-	@echo "Checking routes"
-	@docker exec -it -u www-data ${APP_NAME}.service.app php bin/console debug:router
+cs-check:
+	@echo "Running PHP Code Sniffer"
+	@docker exec -it -u www-data ${APP_NAME}.service.app composer cs-check
 
-debug-messenger:
-	@echo "Checking messenger configuration"
-	@docker exec -it -u www-data ${APP_NAME}.service.app php bin/console debug:messenger
+cs-fix:
+	@echo "Fixing PHP Code Style"
+	@docker exec -it -u www-data ${APP_NAME}.service.app composer cs-fix
 
-test-new-arch:
-	@echo "Testing new architecture compilation"
-	@docker exec -it -u www-data ${APP_NAME}.service.app php bin/console cache:clear
-	@docker exec -it -u www-data ${APP_NAME}.service.app php bin/console debug:container App\\Domain\\Telegram
-	@docker exec -it -u www-data ${APP_NAME}.service.app php bin/console debug:container App\\Infrastructure\\Telegram
+quality: phpstan cs-check
+	@echo "✓ Code quality checks passed"

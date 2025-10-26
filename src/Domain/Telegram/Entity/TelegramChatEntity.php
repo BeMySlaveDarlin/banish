@@ -2,6 +2,8 @@
 
 namespace App\Domain\Telegram\Entity;
 
+use App\Domain\Telegram\Constants\ChatDefaults;
+use App\Domain\Telegram\Constants\Emoji;
 use App\Domain\Telegram\Repository\ChatRepository;
 use App\Infrastructure\Doctrine\Type\JsonBType;
 use App\Infrastructure\Doctrine\Type\JsonBValue;
@@ -26,13 +28,6 @@ use Doctrine\ORM\Mapping\Table;
 #[HasLifecycleCallbacks]
 class TelegramChatEntity
 {
-    public const string OPTION_BAN_VOTES_REQUIRED = 'ban_votes_required';
-    public const string OPTION_DELETE_MESSAGE = 'delete_message';
-    public const string OPTION_MIN_MESSAGES_FOR_TRUST = 'min_messages_for_trust';
-    public const int DEFAULT_VOTES_REQUIRED = 3;
-    public const bool DEFAULT_DELETE_MESSAGES = true;
-    public const int DEFAULT_MIN_MESSAGES_FOR_TRUST = 5;
-
     #[Id]
     #[GeneratedValue(strategy: "SEQUENCE")]
     #[SequenceGenerator(sequenceName: "telegram_chats_id_seq", allocationSize: 1, initialValue: 1)]
@@ -61,20 +56,27 @@ class TelegramChatEntity
 
     public function getOption(string $option): mixed
     {
-        return $this->options->get($option);
+        return $this->options?->get($option);
     }
 
     public function setOption(string $option, mixed $value): void
     {
-        $this->options->set($option, $value);
+        $this->options?->set($option, $value);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public static function getDefaultOptions(): array
     {
         return [
-            self::OPTION_BAN_VOTES_REQUIRED => self::DEFAULT_VOTES_REQUIRED,
-            self::OPTION_DELETE_MESSAGE => self::DEFAULT_DELETE_MESSAGES,
-            self::OPTION_MIN_MESSAGES_FOR_TRUST => self::DEFAULT_MIN_MESSAGES_FOR_TRUST,
+            ChatDefaults::OPTION_BAN_VOTES_REQUIRED => ChatDefaults::DEFAULT_VOTES_REQUIRED,
+            ChatDefaults::OPTION_DELETE_MESSAGE => ChatDefaults::DEFAULT_DELETE_MESSAGES,
+            ChatDefaults::OPTION_DELETE_ONLY => ChatDefaults::DEFAULT_DELETE_ONLY,
+            ChatDefaults::OPTION_MIN_MESSAGES_FOR_TRUST => ChatDefaults::DEFAULT_MIN_MESSAGES_FOR_TRUST,
+            ChatDefaults::OPTION_BAN_EMOJI => Emoji::DEFAULT_BAN,
+            ChatDefaults::OPTION_FORGIVE_EMOJI => Emoji::DEFAULT_FORGIVE,
+            ChatDefaults::OPTION_ENABLE_REACTIONS => ChatDefaults::DEFAULT_ENABLE_REACTIONS,
         ];
     }
 
@@ -85,7 +87,7 @@ class TelegramChatEntity
         $this->updatedAt = new DateTimeImmutable();
 
         $filtered = [];
-        $options = $this->options->toArray();
+        $options = $this->options?->toArray() ?? [];
         foreach (self::getDefaultOptions() as $option => $value) {
             if (isset($options[$option])) {
                 $filtered[$option] = $options[$option];

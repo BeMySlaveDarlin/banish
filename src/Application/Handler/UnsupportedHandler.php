@@ -7,7 +7,7 @@ namespace App\Application\Handler;
 use App\Application\Command\Telegram\UnsupportedCommand;
 use App\Domain\Telegram\Command\TelegramCommandInterface;
 use App\Domain\Telegram\Command\TelegramHandlerInterface;
-use App\Domain\Telegram\ValueObject\ResponseMessages;
+use App\Domain\Telegram\Constants\Messages;
 
 class UnsupportedHandler implements TelegramHandlerInterface
 {
@@ -18,6 +18,6 @@ class UnsupportedHandler implements TelegramHandlerInterface
      */
     public function handle(TelegramCommandInterface $command): string
     {
-        return ResponseMessages::MESSAGE_NOT_SUPPORTED;
+        return Messages::MESSAGE_NOT_SUPPORTED;
     }
 }

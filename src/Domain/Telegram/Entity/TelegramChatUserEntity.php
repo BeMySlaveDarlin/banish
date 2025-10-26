@@ -2,6 +2,7 @@
 
 namespace App\Domain\Telegram\Entity;
 
+use App\Domain\Telegram\Enum\UserStatus;
 use App\Domain\Telegram\Repository\UserRepository;
 use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
@@ -49,6 +50,9 @@ class TelegramChatUserEntity
 
     #[Column(name: 'is_bot', type: Types::BOOLEAN, options: ['default' => false])]
     public bool $isBot;
+
+    #[Column(name: 'status', type: Types::STRING, enumType: UserStatus::class, options: ['default' => 'active'])]
+    public UserStatus $status = UserStatus::ACTIVE;
 
     #[Column(name: 'created_at', type: Types::DATETIME_IMMUTABLE, options: ["default" => "CURRENT_TIMESTAMP"])]
     public DateTimeImmutable $createdAt;

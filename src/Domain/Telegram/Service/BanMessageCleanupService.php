@@ -8,6 +8,7 @@ use App\Domain\Telegram\Entity\TelegramChatUserBanEntity;
 use App\Domain\Telegram\Enum\BanStatus;
 use App\Domain\Telegram\Repository\BanRepository;
 use DateInterval;
+use DateInvalidOperationException;
 use DateTimeImmutable;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -15,9 +16,9 @@ use Throwable;
 class BanMessageCleanupService
 {
     public function __construct(
-        private BanRepository $banRepository,
-        private TelegramApiService $telegramApiService,
-        private LoggerInterface $logger
+        private readonly BanRepository $banRepository,
+        private readonly TelegramApiService $telegramApiService,
+        private readonly LoggerInterface $logger
     ) {
     }
 
@@ -30,26 +31,52 @@ class BanMessageCleanupService
         $this->clearBans($oldPendingBans);
     }
 
+    /**
+     * @param array<int, TelegramChatUserBanEntity> $bans
+     */
     private function clearBans(array $bans): void
     {
         foreach ($bans as $ban) {
             try {
-                $this->telegramApiService->deleteMessage($ban->chatId, $ban->banMessageId);
+                $banMessageDeleted = true;
+                $initialMessageDeleted = true;
+
+                if ($ban->banMessageId > 0) {
+                    $banMessageDeleted = $this->telegramApiService->deleteMessage($ban->chatId, $ban->banMessageId);
+                }
 
                 if ($ban->initialMessageId !== null) {
-                    $this->telegramApiService->deleteMessage($ban->chatId, $ban->initialMessageId);
+                    $initialMessageDeleted = $this->telegramApiService->deleteMessage($ban->chatId, $ban->initialMessageId);
                 }
+
+                if ($banMessageDeleted && $initialMessageDeleted) {
+                    $this->logger->info('Ban messages deleted successfully', [
+                        'banId' => $ban->id,
+                        'chatId' => $ban->chatId,
+                        'banMessageId' => $ban->banMessageId,
+                        'initialMessageId' => $ban->initialMessageId,
+                    ]);
+                } else {
+                    $this->logger->warning('Some ban messages failed to delete', [
+                        'banId' => $ban->id,
+                        'chatId' => $ban->chatId,
+                        'banMessageDeleted' => $banMessageDeleted,
+                        'initialMessageDeleted' => $initialMessageDeleted,
+                    ]);
+                }
+
+                $ban->status = BanStatus::DELETED;
+                $this->banRepository->save($ban, flush: false);
             } catch (Throwable $e) {
-                $this->logger->info('Failed to delete ban message', [
+                $this->logger->error('Error clearing ban messages', [
                     'error' => $e->getMessage(),
                     'banId' => $ban->id,
                     'chatId' => $ban->chatId,
+                    'trace' => $e->getTraceAsString(),
                 ]);
             }
-
-            $ban->status = BanStatus::DELETED;
-            $this->banRepository->save($ban);
         }
+        $this->banRepository->flush();
     }
 
     /**
@@ -64,10 +91,11 @@ class BanMessageCleanupService
 
     /**
      * @return TelegramChatUserBanEntity[]
+     * @throws DateInvalidOperationException
      */
     private function getOldPendingBans(): array
     {
-        $date = (new DateTimeImmutable())->sub(new DateInterval('PT5M'));
+        $date = (new DateTimeImmutable())->sub(new DateInterval('PT10M'));
 
         return $this->banRepository->findOldPending(BanStatus::PENDING, $date);
     }

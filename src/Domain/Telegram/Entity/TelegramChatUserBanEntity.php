@@ -67,7 +67,7 @@ class TelegramChatUserBanEntity
     public DateTimeImmutable $updatedAt;
 
     /**
-     * @var ArrayCollection | Collection |TelegramChatUserBanVoteEntity[]
+     * @var ArrayCollection<int, TelegramChatUserBanVoteEntity> | Collection<int, TelegramChatUserBanVoteEntity> | array<int, TelegramChatUserBanVoteEntity>
      */
     #[OneToMany(mappedBy: 'ban', targetEntity: TelegramChatUserBanVoteEntity::class)]
     public Collection | ArrayCollection | array $votes;

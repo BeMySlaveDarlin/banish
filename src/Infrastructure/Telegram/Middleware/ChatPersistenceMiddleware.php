@@ -9,15 +9,13 @@ use App\Domain\Telegram\Repository\ChatRepository;
 use App\Domain\Telegram\Repository\UserRepository;
 use App\Domain\Telegram\Service\TelegramApiService;
 use App\Domain\Telegram\ValueObject\TelegramUpdate;
-use Psr\Log\LoggerInterface;
 
 class ChatPersistenceMiddleware implements MiddlewareInterface
 {
     public function __construct(
-        private LoggerInterface $logger,
-        private ChatRepository $chatRepository,
-        private UserRepository $userRepository,
-        private TelegramApiService $telegramApiService
+        private readonly ChatRepository $chatRepository,
+        private readonly UserRepository $userRepository,
+        private readonly TelegramApiService $telegramApiService
     ) {
     }
 
@@ -29,12 +27,13 @@ class ChatPersistenceMiddleware implements MiddlewareInterface
             return $command;
         }
 
-        $chat = $this->chatRepository->findByChatId($update->getChat()->id);
+        $chatId = $update->getChat()->id ?? 0;
+        $fromId = $update->getFrom()->id ?? 0;
+        $chatType = $update->getChat()->type ?? '';
+
+        $chat = $this->chatRepository->findByChatId($chatId);
         if ($chat === null) {
-            $chat = $this->chatRepository->createChat(
-                $update->getChat()->id,
-                $update->getChat()->type
-            );
+            $chat = $this->chatRepository->createChat($chatId, $chatType);
         }
 
         if (empty($chat->name)) {
@@ -43,16 +42,10 @@ class ChatPersistenceMiddleware implements MiddlewareInterface
 
         $this->chatRepository->save($chat);
 
-        $user = $this->userRepository->findByChatAndUser(
-            $update->getChat()->id,
-            $update->getFrom()->id
-        );
+        $user = $this->userRepository->findByChatAndUser($chatId, $fromId);
 
         if ($user === null) {
-            $user = $this->userRepository->createUser(
-                $update->getChat()->id,
-                $update->getFrom()->id
-            );
+            $user = $this->userRepository->createUser($chatId, $fromId);
         }
 
         if (empty($user->name)) {
