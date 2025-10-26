@@ -3,6 +3,7 @@
 imports:
     - { resource: 'components/common.yaml' }
     - { resource: 'components/telegram.yaml' }
+    - { resource: 'components/admin.yaml' }
 
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
@@ -21,10 +22,7 @@ services:
             string $botToken: '%telegram.bot_token%'
             string $apiUrl: '%telegram.api_url%'
             string $appSecret: '%app.secret%'
-
-    _instanceof:
-        App\Infrastructure\Telegram\Routing\Registry\RouteRegistryInterface:
-            tags: ['telegram.route_registry']
+            string $adminPanelBaseUrl: '%admin.panel.base_url%'
 
     App\:
         resource: '../src/'
@@ -48,10 +46,22 @@ services:
     App\Infrastructure\Telegram\Routing\Router:
         arguments:
             $botName: '%telegram.bot_name%'
-            $registries: !tagged_iterator telegram.route_registry
+            $registries:
+                - '@App\Infrastructure\Telegram\Routing\Registry\FilterRoutesRegistry'
+                - '@App\Infrastructure\Telegram\Routing\Registry\CommandRoutesRegistry'
+                - '@App\Infrastructure\Telegram\Routing\Registry\ReactionRoutesRegistry'
+                - '@App\Infrastructure\Telegram\Routing\Registry\CallbackQueryRoutesRegistry'
+                - '@App\Infrastructure\Telegram\Routing\Registry\BotMentionRoutesRegistry'
+                - '@App\Infrastructure\Telegram\Routing\Registry\MyChatMemberRoutesRegistry'
+                - '@App\Infrastructure\Telegram\Routing\Registry\DeletedMessageRoutesRegistry'
+                - '@App\Infrastructure\Telegram\Routing\Registry\PrivateChatRoutesRegistry'
+                - '@App\Infrastructure\Telegram\Routing\Registry\FallbackRoutesRegistry'
 
     App\Infrastructure\Telegram\Middleware\MiddlewareManager:
         arguments:
             $middlewares:
                 - '@App\Infrastructure\Telegram\Middleware\DeduplicationMiddleware'
                 - '@App\Infrastructure\Telegram\Middleware\ChatPersistenceMiddleware'
+
+    App\Domain\Telegram\Service\ChatConfigServiceInterface:
+        alias: App\Domain\Telegram\Service\ChatConfigService

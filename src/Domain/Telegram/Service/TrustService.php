@@ -10,8 +10,8 @@ use App\Domain\Telegram\Repository\RequestHistoryRepository;
 class TrustService
 {
     public function __construct(
-        private RequestHistoryRepository $requestHistoryRepository,
-        private ChatConfigService $chatConfigService
+        private readonly RequestHistoryRepository $requestHistoryRepository,
+        private readonly ChatConfigServiceInterface $chatConfigService
     ) {
     }
 

@@ -8,6 +8,9 @@ use App\Domain\Telegram\Entity\TelegramChatUserEntity;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
+/**
+ * @extends ServiceEntityRepository<TelegramChatUserEntity>
+ */
 class UserRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
@@ -15,10 +18,17 @@ class UserRepository extends ServiceEntityRepository
         parent::__construct($registry, TelegramChatUserEntity::class);
     }
 
-    public function findByChatAndUser(int $chatId, int $userId): ?TelegramChatUserEntity
+    public function findByChatAndUser(int $chatId, ?int $userId): ?TelegramChatUserEntity
     {
         return $this->findOneBy([
             'chatId' => $chatId,
+            'userId' => $userId,
+        ]);
+    }
+
+    public function findById(int $userId): ?TelegramChatUserEntity
+    {
+        return $this->findOneBy([
             'userId' => $userId,
         ]);
     }
@@ -35,10 +45,12 @@ class UserRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
-    public function save(TelegramChatUserEntity $user): void
+    public function save(TelegramChatUserEntity $user, bool $flush = true): void
     {
         $this->getEntityManager()->persist($user);
-        $this->getEntityManager()->flush();
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
     }
 
     public function createUser(int $chatId, int $userId): TelegramChatUserEntity
@@ -50,5 +62,54 @@ class UserRepository extends ServiceEntityRepository
         $user->isAdmin = false;
 
         return $user;
+    }
+
+    /**
+     * @return array<int, TelegramChatUserEntity>
+     */
+    public function findByUserIdAdminChats(int $userId): array
+    {
+        return $this
+            ->createQueryBuilder('u')
+            ->where('u.userId = :userId')
+            ->andWhere('u.isAdmin = true')
+            ->setParameter('userId', $userId)
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function countByChat(int $chatId): int
+    {
+        return (int) $this
+            ->createQueryBuilder('u')
+            ->select('COUNT(u.id)')
+            ->where('u.chatId = :chatId')
+            ->setParameter('chatId', $chatId)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * @return array<int, TelegramChatUserEntity>
+     */
+    public function findByChatWithPagination(int $chatId, int $limit, int $offset): array
+    {
+        return $this
+            ->createQueryBuilder('u')
+            ->where('u.chatId = :chatId')
+            ->setParameter('chatId', $chatId)
+            ->orderBy('u.id', 'DESC')
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function remove(TelegramChatUserEntity $user, bool $flush = true): void
+    {
+        $this->getEntityManager()->remove($user);
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
     }
 }

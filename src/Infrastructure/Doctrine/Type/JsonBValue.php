@@ -10,14 +10,23 @@ use Stringable;
 
 class JsonBValue implements JsonSerializable, Stringable
 {
-    public function __construct(
-        public mixed $data = null
-    ) {
-        if (!is_array($this->data)) {
+    /**
+     * @var array<int|string, mixed>
+     */
+    public array $data = [];
+
+    public function __construct(mixed $data)
+    {
+        if (!is_array($data)) {
             $this->data = ['data' => $this->data];
+        } else {
+            $this->data = $data;
         }
     }
 
+    /**
+     * @return array<int|string, mixed>
+     */
     public function toArray(): array
     {
         return $this->data;
@@ -42,7 +51,10 @@ class JsonBValue implements JsonSerializable, Stringable
         }
     }
 
-    public function jsonSerialize(): ?array
+    /**
+     * @return array<int|string, mixed>
+     */
+    public function jsonSerialize(): array
     {
         return $this->data;
     }

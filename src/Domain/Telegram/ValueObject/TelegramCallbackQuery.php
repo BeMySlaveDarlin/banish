@@ -12,6 +12,9 @@ class TelegramCallbackQuery
     public ?string $data = null;
     public ?string $chat_instance = null;
 
+    /**
+     * @return array<string, mixed>
+     */
     public function toArray(): array
     {
         return [

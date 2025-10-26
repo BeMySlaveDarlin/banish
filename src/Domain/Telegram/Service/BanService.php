@@ -8,31 +8,67 @@ use App\Domain\Telegram\Entity\TelegramChatEntity;
 use App\Domain\Telegram\Entity\TelegramChatUserBanEntity;
 use App\Domain\Telegram\Enum\BanStatus;
 use App\Domain\Telegram\Repository\BanRepository;
+use App\Domain\Telegram\Repository\RequestHistoryRepository;
+use Psr\Log\LoggerInterface;
 
 class BanService
 {
     public function __construct(
-        private BanRepository $banRepository,
-        private ChatConfigService $chatConfigService,
-        private TelegramApiService $telegramApiService
+        private readonly BanRepository $banRepository,
+        private readonly ChatConfigServiceInterface $chatConfigService,
+        private readonly TelegramApiService $telegramApiService,
+        private readonly RequestHistoryRepository $requestHistoryRepository,
+        private readonly LoggerInterface $logger
     ) {
     }
 
     public function banUser(TelegramChatEntity $chat, TelegramChatUserBanEntity $ban): void
     {
-        $ban->status = BanStatus::BANNED;
-        $this->banRepository->save($ban);
-
-        $this->telegramApiService->banChatMember($chat->chatId, $ban->spammerId);
-
-        if ($this->chatConfigService->isDeleteMessagesEnabled($chat) && $ban->spamMessageId) {
-            $this->telegramApiService->deleteMessage($chat->chatId, $ban->spamMessageId);
+        $deleteOnlyMessage = $this->chatConfigService->isDeleteOnlyEnabled($chat);
+        if (!$deleteOnlyMessage) {
+            $ban->status = BanStatus::BANNED;
+            $this->telegramApiService->banChatMember($chat->chatId, $ban->spammerId);
+        } else {
+            $ban->status = BanStatus::DELETED;
         }
+
+        if ($this->chatConfigService->isDeleteMessagesEnabled($chat)) {
+            if ($deleteOnlyMessage && $ban->spamMessageId) {
+                $this->deleteMessage($chat->chatId, $ban->spamMessageId);
+            } else {
+                $this->deleteSpammerMessages($chat->chatId, $ban->spammerId);
+            }
+        }
+
+        $this->banRepository->save($ban);
     }
 
     public function forgiveBan(TelegramChatUserBanEntity $ban): void
     {
         $ban->status = BanStatus::CANCELED;
         $this->banRepository->save($ban);
+    }
+
+    private function deleteMessage(int $chatId, int $messageId): void
+    {
+        try {
+            $this->telegramApiService->deleteMessage($chatId, $messageId);
+        } catch (\Throwable $e) {
+            $this->logger->warning('Failed to delete spam message', [
+                'chatId' => $chatId,
+                'messageId' => $messageId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    private function deleteSpammerMessages(int $chatId, int $spammerId): void
+    {
+        $oneHourAgo = (new \DateTimeImmutable())->modify('-1 hour');
+        $messageIds = $this->requestHistoryRepository->getMessageIdsByFromId($chatId, $spammerId, $oneHourAgo);
+
+        foreach ($messageIds as $messageId) {
+            $this->deleteMessage($chatId, $messageId);
+        }
     }
 }

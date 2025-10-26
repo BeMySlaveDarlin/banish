@@ -8,8 +8,6 @@ use App\Domain\Telegram\ValueObject\TelegramUpdate;
 
 interface RouteRegistryInterface
 {
-    public function getPriority(): int;
-
     public function matches(TelegramUpdate $update, string $botName): bool;
 
     public function getCommand(TelegramUpdate $update, string $botName): string;

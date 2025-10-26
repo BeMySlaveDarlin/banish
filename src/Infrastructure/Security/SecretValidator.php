@@ -9,7 +9,7 @@ use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 class SecretValidator
 {
     public function __construct(
-        private string $appSecret
+        private readonly string $appSecret
     ) {
     }
 

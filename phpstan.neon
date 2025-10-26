@@ -1,0 +1,21 @@
+includes:
+  - vendor/phpstan/phpstan-doctrine/extension.neon
+  - vendor/phpstan/phpstan-symfony/extension.neon
+
+parameters:
+  level: 9
+  paths:
+    - src/
+
+  excludePaths:
+    - src/Kernel.php
+
+  tmpDir: var/cache/phpstan
+
+  checkMissingIterableValueType: true
+  checkGenericClassInNonGenericObjectType: true
+  checkMissingCallableSignature: true
+
+  ignoreErrors:
+    - '#Access to an undefined property App\\Domain\\.*\$#'
+    - '#Strict comparison using === between#'

@@ -10,14 +10,17 @@ use App\Infrastructure\Telegram\Routing\Registry\RouteRegistryInterface;
 
 final class Router
 {
+    /** @var array<int, RouteRegistryInterface> */
     private array $registries;
 
+    /**
+     * @param iterable<int, RouteRegistryInterface> $registries
+     */
     public function __construct(
         private readonly string $botName,
         iterable $registries
     ) {
         $this->registries = iterator_to_array($registries);
-        usort($this->registries, fn(RouteRegistryInterface $a, RouteRegistryInterface $b) => $a->getPriority() <=> $b->getPriority());
     }
 
     public function route(TelegramUpdate $update): string

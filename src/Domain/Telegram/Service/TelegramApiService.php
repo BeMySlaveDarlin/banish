@@ -22,6 +22,7 @@ class TelegramApiService
     public const int JSON_OPTIONS = JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
     private const string ACTION_GET_CHAT_MEMBER = '/getChatMember';
     private const string ACTION_BAN_CHAT_MEMBER = '/banChatMember';
+    private const string ACTION_UNBAN_CHAT_MEMBER = '/unbanChatMember';
     private const string ACTION_SEND_MESSAGE = '/sendMessage';
     private const string ACTION_DELETE_MESSAGE = '/deleteMessage';
     private const string ACTION_EDIT_MESSAGE_TEXT = '/editMessageText';
@@ -34,6 +35,7 @@ class TelegramApiService
     private const array TIMEOUTS = [
         self::ACTION_GET_CHAT_MEMBER => 5,
         self::ACTION_BAN_CHAT_MEMBER => 5,
+        self::ACTION_UNBAN_CHAT_MEMBER => 5,
         self::ACTION_SEND_MESSAGE => 10,
         self::ACTION_DELETE_MESSAGE => 5,
         self::ACTION_EDIT_MESSAGE_TEXT => 10,
@@ -46,20 +48,33 @@ class TelegramApiService
 
     private const int DEFAULT_TIMEOUT = 10;
 
+    /** @var array<string, HttpClientInterface> */
     private array $httpClients = [];
 
     public function __construct(
-        private SerializerInterface $serializer,
-        private LoggerInterface $logger,
-        private string $botToken,
-        private string $apiUrl
+        private readonly SerializerInterface $serializer,
+        private readonly LoggerInterface $logger,
+        private readonly string $botToken,
+        private readonly string $apiUrl
     ) {
     }
 
-    public function getChatMember(int $chatId, int $userId): ?TelegramChatMember
+    public function getChatMember(?int $chatId, ?int $userId): ?TelegramChatMember
     {
-        $result = $this->send(self::ACTION_GET_CHAT_MEMBER, ['chat_id' => $chatId, 'user_id' => $userId]);
+        if (null === $chatId || null === $userId) {
+            return null;
+        }
 
+        return $this->getChatMemberFromApi($chatId, $userId);
+    }
+
+    public function getChatMemberFromApi(?int $chatId, ?int $userId): ?TelegramChatMember
+    {
+        if (null === $chatId || null === $userId) {
+            return null;
+        }
+
+        $result = $this->send(self::ACTION_GET_CHAT_MEMBER, ['chat_id' => $chatId, 'user_id' => $userId]);
         if (empty($result)) {
             return null;
         }
@@ -79,6 +94,16 @@ class TelegramApiService
     public function banChatMember(int $chatId, int $userId): bool
     {
         $result = $this->send(self::ACTION_BAN_CHAT_MEMBER, [
+            'chat_id' => $chatId,
+            'user_id' => $userId,
+        ]);
+
+        return !empty($result);
+    }
+
+    public function unbanChatMember(int $chatId, int $userId): bool
+    {
+        $result = $this->send(self::ACTION_UNBAN_CHAT_MEMBER, [
             'chat_id' => $chatId,
             'user_id' => $userId,
         ]);
@@ -108,9 +133,57 @@ class TelegramApiService
 
     public function deleteMessage(int $chatId, int $messageId): bool
     {
-        $result = $this->send(self::ACTION_DELETE_MESSAGE, ['chat_id' => $chatId, 'message_id' => $messageId]);
+        try {
+            $uri = $this->apiUrl . $this->botToken . self::ACTION_DELETE_MESSAGE;
+            $options = $this->getOptions(['chat_id' => $chatId, 'message_id' => $messageId]);
+            $httpClient = $this->getHttpClient(self::ACTION_DELETE_MESSAGE);
+            $response = $httpClient->request('POST', $uri, $options);
 
-        return !empty($result);
+            if (!in_array($response->getStatusCode(), [200, 201, 204], true)) {
+                return false;
+            }
+
+            $content = $response->getContent();
+            if (empty($content)) {
+                return false;
+            }
+
+            if (!json_validate($content)) {
+                return false;
+            }
+
+            /** @var array<string, mixed> $json */
+            $json = json_decode($content, true, 512, JSON_THROW_ON_ERROR);
+            if (!isset($json['ok']) || !$json['ok']) {
+                $description = $json['description'] ?? 'Unknown error';
+                if (is_string($description) && str_contains($description, 'message to delete not found')) {
+                    $this->logger->debug('Message already deleted', [
+                        'chatId' => $chatId,
+                        'messageId' => $messageId,
+                    ]);
+
+                    return true;
+                }
+
+                $this->logger->warning('Failed to delete message', [
+                    'chatId' => $chatId,
+                    'messageId' => $messageId,
+                    'error' => $description,
+                ]);
+
+                return false;
+            }
+
+            return true;
+        } catch (Throwable $e) {
+            $this->logger->warning('Error deleting message', [
+                'chatId' => $chatId,
+                'messageId' => $messageId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 
     public function editMessageText(TelegramEditMessage $message): bool
@@ -154,6 +227,11 @@ class TelegramApiService
         return !empty($result);
     }
 
+    /**
+     * @param array<string, mixed> $params
+     *
+     * @return array<string, mixed>
+     */
     public function getUpdates(array $params = []): array
     {
         $result = $this->send(self::ACTION_GET_UPDATES, $params);
@@ -162,7 +240,10 @@ class TelegramApiService
             return [];
         }
 
-        return json_decode($result);
+        /** @var array<string, mixed> $decoded */
+        $decoded = json_decode($result, true, 512, JSON_THROW_ON_ERROR);
+
+        return $decoded;
     }
 
     public function setWebhook(string $url): bool
@@ -214,9 +295,12 @@ class TelegramApiService
                 throw new BadRequestException('Invalid response JSON');
             }
 
+            /** @var array<string, mixed> $json */
             $json = json_decode($content, true, 512, JSON_THROW_ON_ERROR);
             if (!isset($json['ok']) || !$json['ok']) {
-                throw new BadRequestException($json['description'] ?? 'Error response state');
+                $description = $json['description'] ?? 'Error response state';
+                $errorMsg = is_string($description) ? $description : 'Error response state';
+                throw new BadRequestException($errorMsg);
             }
 
             $this->logger->info('Telegram API request sent', [
@@ -237,6 +321,9 @@ class TelegramApiService
         }
     }
 
+    /**
+     * @return array<string, string>
+     */
     private function getOptions(mixed $params = null): array
     {
         if (is_array($params) || is_object($params)) {

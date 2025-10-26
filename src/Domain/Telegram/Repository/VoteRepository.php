@@ -11,6 +11,9 @@ use App\Domain\Telegram\Enum\VoteType;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
+/**
+ * @extends ServiceEntityRepository<TelegramChatUserBanVoteEntity>
+ */
 class VoteRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
@@ -30,7 +33,8 @@ class VoteRepository extends ServiceEntityRepository
 
     public function countVotesByType(TelegramChatUserBanEntity $ban, VoteType $voteType): int
     {
-        return (int) $this->createQueryBuilder('v')
+        return (int) $this
+            ->createQueryBuilder('v')
             ->select('COUNT(v.id)')
             ->where('v.ban = :ban')
             ->andWhere('v.vote = :voteType')
@@ -40,9 +44,16 @@ class VoteRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
+    /**
+     * @param TelegramChatUserBanEntity $ban
+     * @param VoteType $voteType
+     *
+     * @return TelegramChatUserBanVoteEntity[]
+     */
     public function getVotersByType(TelegramChatUserBanEntity $ban, VoteType $voteType): array
     {
-        return $this->createQueryBuilder('v')
+        return $this
+            ->createQueryBuilder('v')
             ->select('v')
             ->where('v.ban = :ban')
             ->andWhere('v.vote = :voteType')
@@ -52,10 +63,20 @@ class VoteRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    public function save(TelegramChatUserBanVoteEntity $vote): void
+    public function save(TelegramChatUserBanVoteEntity $vote, bool $flush = true): void
     {
         $this->getEntityManager()->persist($vote);
-        $this->getEntityManager()->flush();
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
+    }
+
+    public function delete(TelegramChatUserBanVoteEntity $vote, bool $flush = true): void
+    {
+        $this->getEntityManager()->remove($vote);
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
     }
 
     public function createVote(
@@ -71,5 +92,36 @@ class VoteRepository extends ServiceEntityRepository
         $vote->vote = $voteType;
 
         return $vote;
+    }
+
+    public function countByChat(int $chatId): int
+    {
+        return (int) $this
+            ->createQueryBuilder('v')
+            ->select('COUNT(v.id)')
+            ->where('v.chatId = :chatId')
+            ->setParameter('chatId', $chatId)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    public function deleteByBan(TelegramChatUserBanEntity $ban, bool $flush = true): void
+    {
+        $this
+            ->createQueryBuilder('v')
+            ->delete()
+            ->where('v.ban = :ban')
+            ->setParameter('ban', $ban)
+            ->getQuery()
+            ->execute();
+
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
+    }
+
+    public function flush(): void
+    {
+        $this->getEntityManager()->flush();
     }
 }

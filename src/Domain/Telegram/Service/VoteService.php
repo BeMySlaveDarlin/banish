@@ -14,8 +14,8 @@ use App\Domain\Telegram\Repository\VoteRepository;
 class VoteService
 {
     public function __construct(
-        private VoteRepository $voteRepository,
-        private ChatConfigService $chatConfigService
+        private readonly VoteRepository $voteRepository,
+        private readonly ChatConfigServiceInterface $chatConfigService
     ) {
     }
 
@@ -38,6 +38,17 @@ class VoteService
         return $vote;
     }
 
+    /**
+     * @return array{
+     *     upVotes: array<int, TelegramChatUserEntity>,
+     *     downVotes: array<int, TelegramChatUserEntity>,
+     *     upCount: int,
+     *     downCount: int,
+     *     requiredVotes: int,
+     *     shouldBan: bool,
+     *     shouldForgive: bool
+     * }
+     */
     public function getVoteResult(
         TelegramChatEntity $chat,
         TelegramChatUserBanEntity $ban
@@ -45,19 +56,25 @@ class VoteService
         $upVotes = $this->voteRepository->getVotersByType($ban, VoteType::BAN);
         $downVotes = $this->voteRepository->getVotersByType($ban, VoteType::FORGIVE);
 
-        $upVotersAliases = array_map(fn($vote) => $vote->user->getAlias(), $upVotes);
-        $downVotersAliases = array_map(fn($vote) => $vote->user->getAlias(), $downVotes);
+        $upVoters = array_filter(
+            array_map(static fn($vote) => $vote->user, $upVotes),
+            static fn($user) => $user !== null
+        );
+        $downVoters = array_filter(
+            array_map(static fn($vote) => $vote->user, $downVotes),
+            static fn($user) => $user !== null
+        );
 
         $requiredVotes = $this->chatConfigService->getVotesRequired($chat);
 
         return [
-            'upVotes' => $upVotersAliases,
-            'downVotes' => $downVotersAliases,
-            'upCount' => count($upVotersAliases),
-            'downCount' => count($downVotersAliases),
+            'upVotes' => array_values($upVoters),
+            'downVotes' => array_values($downVoters),
+            'upCount' => count($upVoters),
+            'downCount' => count($downVoters),
             'requiredVotes' => $requiredVotes,
-            'shouldBan' => count($upVotersAliases) >= $requiredVotes,
-            'shouldForgive' => count($downVotersAliases) >= $requiredVotes,
+            'shouldBan' => count($upVoters) >= $requiredVotes,
+            'shouldForgive' => count($downVoters) >= $requiredVotes,
         ];
     }
 }

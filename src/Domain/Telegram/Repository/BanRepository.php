@@ -9,6 +9,9 @@ use App\Domain\Telegram\Enum\BanStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
+/**
+ * @extends ServiceEntityRepository<TelegramChatUserBanEntity>
+ */
 class BanRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
@@ -28,7 +31,7 @@ class BanRepository extends ServiceEntityRepository
     public function findByReporterAndMessage(
         int $chatId,
         int $reporterId,
-        int $banMessageId
+        ?int $banMessageId
     ): ?TelegramChatUserBanEntity {
         return $this->findOneBy([
             'chatId' => $chatId,
@@ -37,9 +40,48 @@ class BanRepository extends ServiceEntityRepository
         ]);
     }
 
-    public function save(TelegramChatUserBanEntity $ban): void
+    public function findBySpamMessage(int $chatId, ?int $spamMessageId): ?TelegramChatUserBanEntity
+    {
+        return $this->findOneBy([
+            'chatId' => $chatId,
+            'spamMessageId' => $spamMessageId,
+            'status' => BanStatus::PENDING,
+        ]);
+    }
+
+    /**
+     * @return array<int, TelegramChatUserBanEntity>
+     */
+    public function findOldPending(BanStatus $status, \DateTimeImmutable $date): array
+    {
+        return $this
+            ->createQueryBuilder('b')
+            ->where('b.status = :status')
+            ->andWhere('b.createdAt <= :date')
+            ->setParameter('status', $status)
+            ->setParameter('date', $date)
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function save(TelegramChatUserBanEntity $ban, bool $flush = true): void
     {
         $this->getEntityManager()->persist($ban);
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
+    }
+
+    public function remove(TelegramChatUserBanEntity $ban, bool $flush = true): void
+    {
+        $this->getEntityManager()->remove($ban);
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
+    }
+
+    public function flush(): void
+    {
         $this->getEntityManager()->flush();
     }
 
@@ -63,13 +105,74 @@ class BanRepository extends ServiceEntityRepository
         return $ban;
     }
 
-    public function findOldPending(BanStatus $status, \DateTimeImmutable $date): array
+    public function countByChat(int $chatId): int
     {
-        return $this->createQueryBuilder('b')
-            ->where('b.status = :status')
-            ->andWhere('b.createdAt < :date')
-            ->setParameter('status', $status)
-            ->setParameter('date', $date)
+        return (int) $this
+            ->createQueryBuilder('b')
+            ->select('COUNT(b.id)')
+            ->where('b.chatId = :chatId')
+            ->setParameter('chatId', $chatId)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    public function countActiveBans(int $chatId): int
+    {
+        return (int) $this
+            ->createQueryBuilder('b')
+            ->select('COUNT(b.id)')
+            ->where('b.chatId = :chatId')
+            ->andWhere('b.status = :status')
+            ->setParameter('chatId', $chatId)
+            ->setParameter('status', BanStatus::PENDING)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * @return array<int, TelegramChatUserBanEntity>
+     */
+    public function findRecent(int $chatId, int $limit = 10): array
+    {
+        return $this
+            ->createQueryBuilder('b')
+            ->where('b.chatId = :chatId')
+            ->setParameter('chatId', $chatId)
+            ->orderBy('b.createdAt', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return array<int, TelegramChatUserBanEntity>
+     */
+    public function findRecentWithPagination(int $chatId, int $limit, int $offset): array
+    {
+        return $this
+            ->createQueryBuilder('b')
+            ->where('b.chatId = :chatId')
+            ->setParameter('chatId', $chatId)
+            ->orderBy('b.createdAt', 'DESC')
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return array<int, TelegramChatUserBanEntity>
+     */
+    public function findActiveBansBySpammer(int $spammerId, int $chatId): array
+    {
+        return $this
+            ->createQueryBuilder('b')
+            ->where('b.spammerId = :spammerId')
+            ->andWhere('b.chatId = :chatId')
+            ->andWhere('b.status IN (:statuses)')
+            ->setParameter('spammerId', $spammerId)
+            ->setParameter('chatId', $chatId)
+            ->setParameter('statuses', [BanStatus::BANNED])
             ->getQuery()
             ->getResult();
     }

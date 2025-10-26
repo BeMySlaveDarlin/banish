@@ -9,11 +9,6 @@ use App\Domain\Telegram\ValueObject\TelegramUpdate;
 
 final readonly class CallbackQueryRoutesRegistry implements RouteRegistryInterface
 {
-    public function getPriority(): int
-    {
-        return 60;
-    }
-
     public function matches(TelegramUpdate $update, string $botName): bool
     {
         return $update->hasCallbackQueryData();

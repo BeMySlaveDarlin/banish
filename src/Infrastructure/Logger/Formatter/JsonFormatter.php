@@ -12,8 +12,8 @@ use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 class JsonFormatter implements FormatterInterface
 {
     public function __construct(
-        private ParameterBagInterface $params,
-        private RequestMetrics $requestMetrics
+        private readonly ParameterBagInterface $params,
+        private readonly RequestMetrics $requestMetrics
     ) {
     }
 
@@ -34,15 +34,25 @@ class JsonFormatter implements FormatterInterface
         return "$timestamp $channel $message $contextStr" . PHP_EOL;
     }
 
+    /**
+     * @param array<int, LogRecord> $records
+     * @return array<int, string>
+     */
     public function formatBatch(array $records): array
     {
+        /** @var array<int, string> $formatted */
+        $formatted = [];
         foreach ($records as $key => $record) {
-            $records[$key] = $this->format($record);
+            $formatted[$key] = $this->format($record);
         }
 
-        return $records;
+        return $formatted;
     }
 
+    /**
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>
+     */
     public function formatContext(array $context): array
     {
         $metricsTimestamps = $this->requestMetrics->getMetrics();

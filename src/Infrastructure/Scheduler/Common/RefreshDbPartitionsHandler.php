@@ -11,7 +11,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 class RefreshDbPartitionsHandler
 {
     public function __construct(
-        private PartitionService $partitionService
+        private readonly PartitionService $partitionService
     ) {
     }
 

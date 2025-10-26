@@ -8,17 +8,15 @@ use App\Domain\Telegram\Repository\RequestHistoryRepository;
 use App\Domain\Telegram\Repository\UserRepository;
 use App\Domain\Telegram\ValueObject\TelegramMessage;
 use App\Domain\Telegram\ValueObject\TelegramUpdate;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 
 class SpammerMessageService
 {
     public function __construct(
-        private LoggerInterface $logger,
-        private UserRepository $userRepository,
-        private RequestHistoryRepository $requestHistoryRepository,
-        private SerializerInterface $serializer,
-        private string $botName
+        private readonly UserRepository $userRepository,
+        private readonly RequestHistoryRepository $requestHistoryRepository,
+        private readonly SerializerInterface $serializer,
+        private readonly string $botName
     ) {
     }
 
@@ -54,8 +52,17 @@ class SpammerMessageService
     {
         $username = $update->getMessageObj()->getUserMention($this->botName);
 
+        if ($username === null) {
+            return null;
+        }
+
+        $chatId = $update->getChat()->id;
+        if ($chatId === null) {
+            return null;
+        }
+
         $user = $this->userRepository->findByChatAndUsername(
-            $update->getChat()->id,
+            $chatId,
             $username
         );
 
@@ -72,35 +79,43 @@ class SpammerMessageService
                 'username' => $user->username,
             ],
             'chat' => [
-                'id' => $update->getChat()->id,
+                'id' => $chatId,
                 'type' => $update->getChat()->type,
             ],
             'date' => time(),
             'text' => '',
         ];
 
-        return $this->serializer->deserialize(json_encode($messageData), TelegramMessage::class, 'json');
+        return $this->serializer->deserialize(json_encode($messageData, JSON_THROW_ON_ERROR), TelegramMessage::class, 'json');
     }
 
     private function getPreviousMessage(TelegramUpdate $update): ?TelegramMessage
     {
+        $chatId = $update->getChat()->id;
+        $fromId = $update->getFrom()->id;
+        $messageId = $update->getMessageObj()->message_id;
+
+        if ($chatId === null || $fromId === null || $messageId === null) {
+            return null;
+        }
+
         $history = $this->requestHistoryRepository->findPreviousMessage(
-            $update->getChat()->id,
-            $update->getFrom()->id,
-            $update->getMessageObj()->message_id
+            $chatId,
+            $fromId,
+            $messageId
         );
 
         if (!$history) {
             return null;
         }
 
-        $requestData = $history->request->toArray();
+        $requestData = $history->request?->toArray() ?? [];
         $messageData = $requestData['message'] ?? null;
 
         if (!$messageData) {
             return null;
         }
 
-        return $this->serializer->deserialize(json_encode($messageData), TelegramMessage::class, 'json');
+        return $this->serializer->deserialize(json_encode($messageData, JSON_THROW_ON_ERROR), TelegramMessage::class, 'json');
     }
 }

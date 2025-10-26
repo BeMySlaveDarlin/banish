@@ -5,18 +5,26 @@ declare(strict_types=1);
 namespace App\Application\Command\Telegram;
 
 use App\Domain\Telegram\Command\TelegramCommandInterface;
-use App\Domain\Telegram\Entity\TelegramChatEntity;
-use App\Domain\Telegram\Entity\TelegramChatUserEntity;
-use App\Domain\Telegram\ValueObject\TelegramUpdate;
 
 class UnsupportedCommand implements TelegramCommandInterface
 {
-    public TelegramUpdate $update;
-    public ?TelegramChatEntity $chat = null;
-    public ?TelegramChatUserEntity $user = null;
-
-    public function __construct(TelegramUpdate $update)
+    public function getChatId(): int
     {
-        $this->update = $update;
+        return 0;
+    }
+
+    public function getUserId(): int
+    {
+        return 0;
+    }
+
+    public function getNewStatus(): ?string
+    {
+        return null;
+    }
+
+    public function getOldStatus(): ?string
+    {
+        return null;
     }
 }

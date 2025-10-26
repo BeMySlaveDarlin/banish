@@ -2,3 +2,7 @@ framework:
     cache:
         app: cache.adapter.memcached
         default_memcached_provider: '%env(MEMCACHED_DSN)%'
+        pools:
+            cache.telegram:
+                adapter: cache.adapter.memcached
+                default_lifetime: 3600

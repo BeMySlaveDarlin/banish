@@ -8,6 +8,9 @@ use App\Domain\Telegram\Entity\TelegramChatEntity;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
+/**
+ * @extends ServiceEntityRepository<TelegramChatEntity>
+ */
 class ChatRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
@@ -20,10 +23,12 @@ class ChatRepository extends ServiceEntityRepository
         return $this->findOneBy(['chatId' => $chatId]);
     }
 
-    public function save(TelegramChatEntity $chat): void
+    public function save(TelegramChatEntity $chat, bool $flush = true): void
     {
         $this->getEntityManager()->persist($chat);
-        $this->getEntityManager()->flush();
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
     }
 
     public function createChat(int $chatId, string $type): TelegramChatEntity
@@ -34,5 +39,10 @@ class ChatRepository extends ServiceEntityRepository
         $chat->isEnabled = false;
 
         return $chat;
+    }
+
+    public function flush(): void
+    {
+        $this->getEntityManager()->flush();
     }
 }

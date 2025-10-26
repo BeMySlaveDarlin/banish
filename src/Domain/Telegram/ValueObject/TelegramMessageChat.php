@@ -32,9 +32,10 @@ class TelegramMessageChat
             return $this->title;
         }
 
-        $firstName = $this->first_name;
-        $lastName = $this->last_name;
+        $firstName = $this->first_name ?? '';
+        $lastName = $this->last_name ?? '';
+        $alias = trim("$firstName $lastName");
 
-        return trim("$firstName $lastName") ?? 'Chat';
+        return $alias ?: 'Chat';
     }
 }

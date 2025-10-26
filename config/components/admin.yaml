@@ -1,0 +1,2 @@
+parameters:
+    admin.panel.base_url: '%env(ADMIN_PANEL_BASE_URL)%'

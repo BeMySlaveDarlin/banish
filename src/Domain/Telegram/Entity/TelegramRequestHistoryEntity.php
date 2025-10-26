@@ -54,6 +54,9 @@ class TelegramRequestHistoryEntity
     #[Column(name: 'created_at', type: Types::DATETIME_IMMUTABLE, options: ["default" => "CURRENT_TIMESTAMP"])]
     public DateTimeImmutable $createdAt;
 
+    #[Column(name: 'deleted_at', type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    public ?DateTimeImmutable $deletedAt = null;
+
     public bool $isNew = false;
 
     public function setResponse(mixed $data = null): void
@@ -70,5 +73,15 @@ class TelegramRequestHistoryEntity
     public function onCreate(): void
     {
         $this->createdAt = new DateTimeImmutable();
+    }
+
+    public function markAsDeleted(): void
+    {
+        $this->deletedAt = new DateTimeImmutable();
+    }
+
+    public function isDeleted(): bool
+    {
+        return $this->deletedAt !== null;
     }
 }

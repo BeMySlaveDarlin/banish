@@ -10,18 +10,22 @@ use App\Domain\Telegram\ValueObject\TelegramUpdate;
 class HistoryService
 {
     public function __construct(
-        private RequestHistoryRepository $requestHistoryRepository,
+        private readonly RequestHistoryRepository $requestHistoryRepository,
     ) {
     }
 
     public function createRequestHistory(TelegramUpdate $update, mixed $result = null): void
     {
+        $messageId = $update->getMessageId() ?? 0;
+        $chatId = $update->getChat()->id ?? 0;
+        $fromId = $update->getFrom()->id ?? 0;
+
         $this->requestHistoryRepository->createHistory(
-            $update->getChat()->id,
-            $update->getFrom()->id,
-            $update->getMessageObj()->message_id,
+            $chatId,
+            $fromId,
+            $messageId,
             $update->update_id,
-            $update->request,
+            $update->request ?? [],
             $result
         );
     }
