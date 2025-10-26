@@ -27,3 +27,14 @@ services:
   nginx:
     build:
       context: ./docker/nginx
+
+  frontend:
+    build:
+      context: .
+      dockerfile: ./docker/node/Dockerfile
+      target: node_prod
+      args:
+        - VITE_API_URL=${VITE_API_URL}
+    volumes:
+      - ./frontend/dist:/app/dist
+    ports: []

@@ -8,7 +8,8 @@ RUN apt update && apt install -y \
     apt-utils gnupg g++ git procps openssl  \
     mc nano make acl curl wget unzip gettext \
     zlib1g-dev libzip-dev libonig-dev libxslt1-dev \
-    libicu-dev libpq-dev libmemcached-dev libmemcached11
+    libicu-dev libpq-dev libmemcached-dev libmemcached11 \
+    librabbitmq-dev
 
 RUN ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime && echo ${TIMEZONE} > /etc/timezone \
     && printf '[PHP]\ndate.timezone = "%s"\n', ${TIMEZONE} > /usr/local/etc/php/conf.d/tzone.ini \
@@ -26,7 +27,8 @@ RUN pecl update-channels
 RUN pecl install redis
 RUN pecl install igbinary
 RUN pecl install memcached
-RUN docker-php-ext-enable redis igbinary memcached
+RUN pecl install amqp
+RUN docker-php-ext-enable redis igbinary memcached amqp
 
 COPY --link conf.d/app.ini $PHP_INI_DIR/conf.d/
 RUN sed -i "s/pm.max_children = 5/pm.max_children = 200/" /usr/local/etc/php-fpm.d/www.conf \

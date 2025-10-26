@@ -12,7 +12,9 @@ class RequestMetrics
     public const string FINISH_TIME = 'rtf';
     public const string EXECUTION_TIME = 'rte';
 
+    /** @var array<string, mixed> */
     private array $data = [];
+    /** @var array<string, string> */
     private array $context = [];
 
     public function __construct()
@@ -26,11 +28,17 @@ class RequestMetrics
         $this->context['uri'] = $uri;
     }
 
+    /**
+     * @return array<string, string>
+     */
     public function getContext(): array
     {
         return $this->context;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getMetrics(): array
     {
         $this->data[self::FINISH_TIME] = microtime(true);

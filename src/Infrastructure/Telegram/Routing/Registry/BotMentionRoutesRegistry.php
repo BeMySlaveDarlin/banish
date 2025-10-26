@@ -9,11 +9,6 @@ use App\Domain\Telegram\ValueObject\TelegramUpdate;
 
 final readonly class BotMentionRoutesRegistry implements RouteRegistryInterface
 {
-    public function getPriority(): int
-    {
-        return 50;
-    }
-
     public function matches(TelegramUpdate $update, string $botName): bool
     {
         return $update->getMessageObj()->hasBotMention($botName);

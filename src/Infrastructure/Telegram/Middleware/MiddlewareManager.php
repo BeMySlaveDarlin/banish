@@ -12,7 +12,7 @@ class MiddlewareManager
      * @param MiddlewareInterface[] $middlewares
      */
     public function __construct(
-        private array $middlewares
+        private readonly array $middlewares
     ) {
     }
 

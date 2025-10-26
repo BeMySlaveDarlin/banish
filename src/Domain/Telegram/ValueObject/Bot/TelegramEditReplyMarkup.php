@@ -6,6 +6,9 @@ namespace App\Domain\Telegram\ValueObject\Bot;
 
 class TelegramEditReplyMarkup
 {
+    /**
+     * @param TelegramReplyMarkup|array<int, array<string, string>> $reply_markup
+     */
     public function __construct(
         public int $chat_id,
         public int $message_id,

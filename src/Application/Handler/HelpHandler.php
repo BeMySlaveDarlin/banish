@@ -7,25 +7,21 @@ namespace App\Application\Handler;
 use App\Application\Command\Telegram\HelpCommand;
 use App\Domain\Telegram\Command\TelegramCommandInterface;
 use App\Domain\Telegram\Command\TelegramHandlerInterface;
+use App\Domain\Telegram\Constants\Messages;
 use App\Domain\Telegram\Service\TelegramApiService;
 use App\Domain\Telegram\ValueObject\Bot\TelegramSendMessage;
-use App\Domain\Telegram\ValueObject\ResponseMessages;
-use Psr\Log\LoggerInterface;
 
 class HelpHandler implements TelegramHandlerInterface
 {
     private const array COMMANDS = [
-        '/help' => "List of available commands.\nUsage: /help\n",
-        '/toggleBot' => "Turn on/off bot for group.\nDefault: Off.\nUsage: /toggleBot\n",
-        '/votesLimit' => "Set max number of votes to accept or revoke ban.\nDefault: 3.\nUsage: /votesLimit 5\n",
-        '/toggleDeleteMessage' => "Delete spam message after ban accepted.\nDefault: On.\nUsage: /toggleDeleteMessage\n",
-        '/setMinMessagesForTrust' => "Set minimal previous messages in chat for user to prevent ban.\nDefault: 10.\nUsage: /setMinMessagesForTrust 10\n",
+        '/ban' => ['Start ban process', '—', '/ban'],
+        '/help' => ['List of available commands', '—', '/help'],
+        '/admin' => ['Get admin page link', '—', '/admin'],
     ];
 
     public function __construct(
-        private TelegramApiService $telegramApiService,
-        private LoggerInterface $logger,
-        private string $botName
+        private readonly TelegramApiService $telegramApiService,
+        private readonly string $botName
     ) {
     }
 
@@ -36,33 +32,47 @@ class HelpHandler implements TelegramHandlerInterface
      */
     public function handle(TelegramCommandInterface $command): string
     {
-        $this->logger->info('test help');
-        if (!$command->user->isAdmin && !$command->update->getChat()->isPrivate()) {
-            return ResponseMessages::MESSAGE_NO_ACCESS;
+        if ($command->user === null) {
+            return Messages::MESSAGE_COMMAND_404;
         }
 
         $commandObj = $command->update->getMessageObj()->getCommand($this->botName);
         if ($commandObj === null) {
-            return ResponseMessages::MESSAGE_COMMAND_404;
+            return Messages::MESSAGE_COMMAND_404;
         }
 
-        $allowedCommands = ['/start', '/help'];
-        if (in_array($commandObj->command, $allowedCommands, true)) {
-            $texts = [
-                sprintf(ResponseMessages::MESSAGE_HELLO, $command->user->getAlias()),
-            ];
+        $helpCommands = ['/start', '/help'];
+        $publicCommands = ['/start', '/help', '/ban'];
+        if (in_array($commandObj->command, $helpCommands, true)) {
+            $table = sprintf(Messages::MESSAGE_HELLO, $command->user->getAlias()) . "\n\n";
+            $table .= "<pre>";
+            $table .= "Command                Description\n";
+            $table .= str_repeat("─", 65) . "\n";
 
-            foreach (self::COMMANDS as $cmd => $description) {
-                $texts[] = "$cmd -- $description";
+            foreach (self::COMMANDS as $cmd => [$description, $default, $usage]) {
+                if (!in_array($cmd, $publicCommands) && !$command->update->getChat()->isPrivate()) {
+                    continue;
+                }
+                $cmd_padded = str_pad($cmd, 24);
+                $table .= $cmd_padded . $description . "\n";
+                $table .= "  Usage: " . $usage . "\n";
+                $table .= "  Default: " . $default . "\n";
+                $table .= str_repeat("─", 65) . "\n";
             }
 
-            $text = implode("\n", $texts);
-            $message = new TelegramSendMessage($command->chat->chatId, $text);
+            $table .= "</pre>";
+
+            if ($command->chat === null) {
+                return Messages::MESSAGE_BOT_DISABLED;
+            }
+
+            $message = new TelegramSendMessage($command->chat->chatId, $table);
+            $message->parse_mode = 'HTML';
             $this->telegramApiService->sendMessage($message);
 
-            return ResponseMessages::MESSAGE_PROCESSED;
+            return Messages::MESSAGE_PROCESSED;
         }
 
-        return ResponseMessages::MESSAGE_IS_PRIVATE_CHAT;
+        return Messages::MESSAGE_IS_PRIVATE_CHAT;
     }
 }

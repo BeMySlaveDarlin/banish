@@ -33,6 +33,7 @@ class RequestListener
             $response->getStatusCode() >= 200 && $response->getStatusCode() < 400 => Level::Info,
             $response->getStatusCode() >= 400 && $response->getStatusCode() < 500 => Level::Warning,
             $response->getStatusCode() >= 500 => Level::Error,
+            default => Level::Notice,
         };
 
         $this->logger->log($logLevel, 'HTTP Request', [

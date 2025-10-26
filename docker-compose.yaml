@@ -10,8 +10,12 @@ services:
     env_file:
       - .env
     depends_on:
-      - database
-      - memcached
+      database:
+        condition: service_started
+      memcached:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
     working_dir: /var/www/app
     volumes:
       - .:/var/www/app
@@ -45,6 +49,35 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  rabbitmq:
+    container_name: ${APP_NAME}.service.rabbitmq
+    image: rabbitmq:3.13-management-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      database:
+        condition: service_started
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    ports:
+      - "${RABBITMQ_AMQP_PORTS:-5672:5672}"
+      - "${RABBITMQ_MANAGEMENT_PORTS:-15672:15672}"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - app_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   supervisor:
     container_name: ${APP_NAME}.service.supervisor
     restart: unless-stopped
@@ -56,7 +89,8 @@ services:
     env_file:
       - .env
     depends_on:
-      - app
+      app:
+        condition: service_started
     volumes:
       - .:/var/www/app
       - ./docker/php/supervisor/supervisord.conf:/etc/supervisor/supervisord.conf
@@ -98,26 +132,30 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  redis:
-    container_name: ${APP_NAME}.service.redis
-    image: redis:5
+  frontend:
+    container_name: ${APP_NAME}.service.frontend
     restart: unless-stopped
-    env_file:
-      - .env
+    depends_on:
+      app:
+        condition: service_started
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - ${FRONTEND_DEV_PORT:-5173:5173}
     networks:
       - app_network
-    volumes:
-      - redis_data:/data
-    command: [ "redis-server", "--appendonly", "yes" ]
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
+    env_file:
+      - .env
 
 volumes:
   database_data:
-  redis_data:
+  rabbitmq_data:
 
 networks:
   app_network:

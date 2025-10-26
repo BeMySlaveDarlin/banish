@@ -24,9 +24,10 @@ class TelegramMessageFrom
             return '@' . $this->username;
         }
 
-        $firstName = $this->first_name;
-        $lastName = $this->last_name;
+        $firstName = $this->first_name ?? '';
+        $lastName = $this->last_name ?? '';
+        $alias = trim("$firstName $lastName");
 
-        return trim("$firstName $lastName") ?? 'User';
+        return $alias ?: 'User';
     }
 }

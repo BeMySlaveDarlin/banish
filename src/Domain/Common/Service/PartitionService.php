@@ -12,8 +12,8 @@ use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 class PartitionService
 {
     public function __construct(
-        private Connection $connection,
-        private ParameterBagInterface $parameters
+        private readonly Connection $connection,
+        private readonly ParameterBagInterface $parameters
     ) {
     }
 
@@ -24,6 +24,9 @@ class PartitionService
         $nextMonth = $now->add(new DateInterval('P3M'));
 
         $tables = $this->parameters->get('app.partitioned_tables');
+        if (!is_array($tables)) {
+            return;
+        }
         foreach ($tables as $table => $params) {
             if (!$this->isTableExists($table)) {
                 continue;

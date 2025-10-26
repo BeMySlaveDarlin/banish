@@ -9,11 +9,6 @@ use App\Domain\Telegram\ValueObject\TelegramUpdate;
 
 final readonly class PrivateChatRoutesRegistry implements RouteRegistryInterface
 {
-    public function getPriority(): int
-    {
-        return 40;
-    }
-
     public function matches(TelegramUpdate $update, string $botName): bool
     {
         return $update->getChat()->isPrivate();

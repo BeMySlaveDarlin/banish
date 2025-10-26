@@ -48,10 +48,20 @@ class JsonBType extends Type
 
         if (is_resource($value)) {
             $value = stream_get_contents($value);
+            if ($value === false) {
+                $value = '{}';
+            }
         }
 
         try {
-            $decoded = json_decode($value, true, 512, JSON_THROW_ON_ERROR);
+            /** @var string|mixed $value */
+            if (is_string($value)) {
+                $jsonString = $value ?: '{}';
+            } else {
+                $jsonString = is_scalar($value) ? (string) $value : '{}';
+            }
+            /** @var string $jsonString */
+            $decoded = json_decode($jsonString, true, 512, JSON_THROW_ON_ERROR);
 
             return new JsonBValue($decoded);
         } catch (JsonException $e) {
