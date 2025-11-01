@@ -10,18 +10,16 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'app:telegram:clear-updates')]
+#[AsCommand(
+    name: 'app:telegram:clear-updates',
+    description: 'Clear Telegram Updates',
+)]
 class ClearUpdatesCommand extends Command
 {
     public function __construct(
         private readonly TelegramWebhookService $webhookService,
     ) {
         parent::__construct();
-    }
-
-    protected function configure(): void
-    {
-        $this->setDescription('Clear telegram updates');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

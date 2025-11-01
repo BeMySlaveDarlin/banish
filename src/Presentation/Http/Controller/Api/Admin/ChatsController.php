@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Presentation\Http\Controller\Api\Admin;
 
+use App\Domain\Admin\Entity\AdminSessionEntity;
 use App\Domain\Admin\Service\AdminSessionService;
 use App\Domain\Telegram\Entity\TelegramChatEntity;
 use App\Domain\Telegram\Entity\TelegramChatUserEntity;
@@ -12,6 +13,7 @@ use App\Domain\Telegram\Repository\ChatRepository;
 use App\Domain\Telegram\Repository\UserRepository;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 class ChatsController extends AbstractAdminController
 {
@@ -24,18 +26,11 @@ class ChatsController extends AbstractAdminController
         parent::__construct($sessionService);
     }
 
-    public function listAction(Request $request): JsonResponse
-    {
-        $token = $this->getTokenFromRequest($request);
-        if (!$token) {
-            return $this->json(['error' => 'Unauthorized'], 401);
-        }
-
-        $session = $this->sessionService->validateSession($token);
-        if (!$session) {
-            return $this->json(['error' => 'Invalid or expired session'], 401);
-        }
-
+    public function listAction(
+        Request $request,
+        #[CurrentUser]
+        AdminSessionEntity $session,
+    ): JsonResponse {
         $adminChats = $this->userRepository->findByUserIdAdminChats($session->userId);
         if (empty($adminChats)) {
             $response = $this->json(['chats' => [], 'total' => 0]);

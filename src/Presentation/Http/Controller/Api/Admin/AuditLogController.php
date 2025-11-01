@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Presentation\Http\Controller\Api\Admin;
 
+use App\Domain\Admin\Entity\AdminSessionEntity;
 use App\Domain\Admin\Service\AdminActionLogService;
 use App\Domain\Admin\Service\AdminSessionService;
 use App\Domain\Telegram\Repository\ChatRepository;
 use App\Domain\Telegram\Repository\UserRepository;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 class AuditLogController extends AbstractAdminController
 {
@@ -22,18 +24,12 @@ class AuditLogController extends AbstractAdminController
         parent::__construct($sessionService);
     }
 
-    public function chatLogsAction(int $chatId, Request $request): JsonResponse
-    {
-        $token = $this->getTokenFromRequest($request);
-        if (!$token) {
-            return $this->json(['error' => 'Unauthorized'], 401);
-        }
-
-        $session = $this->sessionService->validateSession($token);
-        if (!$session) {
-            return $this->json(['error' => 'Invalid or expired session'], 401);
-        }
-
+    public function chatLogsAction(
+        int $chatId,
+        Request $request,
+        #[CurrentUser]
+        AdminSessionEntity $session,
+    ): JsonResponse {
         $chatUser = $this->userRepository->findByChatAndUser($chatId, $session->userId);
         if (!$chatUser || !$chatUser->isAdmin) {
             return $this->json(['error' => 'Access denied'], 403);
@@ -71,16 +67,6 @@ class AuditLogController extends AbstractAdminController
 
     public function userLogsAction(int $userId, Request $request): JsonResponse
     {
-        $token = $this->getTokenFromRequest($request);
-        if (!$token) {
-            return $this->json(['error' => 'Unauthorized'], 401);
-        }
-
-        $session = $this->sessionService->validateSession($token);
-        if (!$session) {
-            return $this->json(['error' => 'Invalid or expired session'], 401);
-        }
-
         $limit = (int) ($request->query->get('limit') ?? '50');
         $limit = min($limit, 500);
 

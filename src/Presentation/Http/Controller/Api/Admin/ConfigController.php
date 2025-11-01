@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Presentation\Http\Controller\Api\Admin;
 
+use App\Domain\Admin\Entity\AdminSessionEntity;
 use App\Domain\Admin\Enum\AdminActionType;
 use App\Domain\Admin\Service\AdminActionLogService;
 use App\Domain\Admin\Service\AdminSessionService;
@@ -15,6 +16,7 @@ use App\Domain\Telegram\Repository\UserRepository;
 use App\Domain\Telegram\Service\ChatConfigServiceInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 class ConfigController extends AbstractAdminController
 {
@@ -28,8 +30,10 @@ class ConfigController extends AbstractAdminController
         parent::__construct($sessionService);
     }
 
-    public function getAction(int $chatId, Request $request): JsonResponse
-    {
+    public function getAction(
+        int $chatId,
+        Request $request
+    ): JsonResponse {
         $chat = $this->getChatWithAccess($chatId, $request);
         if (!$chat) {
             return $this->json(['error' => 'Chat not found or access denied'], 403);
@@ -55,24 +59,19 @@ class ConfigController extends AbstractAdminController
         return $response;
     }
 
-    public function updateAction(int $chatId, Request $request): JsonResponse
-    {
+    public function updateAction(
+        int $chatId,
+        Request $request,
+        #[CurrentUser]
+        AdminSessionEntity $session,
+    ): JsonResponse {
         $chat = $this->getChatWithAccess($chatId, $request);
         if (!$chat) {
             return $this->json(['error' => 'Chat not found or access denied'], 403);
         }
 
-        $token = $this->getTokenFromRequest($request);
-        if (!$token) {
-            return $this->json(['error' => 'Unauthorized'], 401);
-        }
-        $session = $this->sessionService->validateSession($token);
-        if (!$session) {
-            return $this->json(['error' => 'Invalid or expired session'], 401);
-        }
-
         /** @var array<string, mixed> $data */
-        $data = json_decode($request->getContent(), true, 512, JSON_THROW_ON_ERROR) ?? [];
+        $data = \json_decode($request->getContent(), true, 512, JSON_THROW_ON_ERROR) ?? [];
         $changedFields = [];
 
         $this->ensureAllDefaultOptionsExist($chat);

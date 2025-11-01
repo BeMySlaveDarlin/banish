@@ -1,17 +1,17 @@
 admin_auth_login:
-  path: /api/admin/auth/login/{token}
-  controller: App\Presentation\Http\Controller\Api\Admin\AuthController::loginAction
-  methods: GET
+  path: /api/admin/auth/login/
+  controller: App\Presentation\Http\Controller\Api\Admin\Auth\Login\ActionController
+  methods: POST
 
 admin_auth_validate:
-  path: /api/admin/auth/validate
-  controller: App\Presentation\Http\Controller\Api\Admin\AuthController::validateAction
+  path: /api/admin/auth/validate/
+  controller: App\Presentation\Http\Controller\Api\Admin\Auth\Validate\ActionController
   methods: POST
 
 admin_auth_logout:
-  path: /api/admin/auth/logout
-  controller: App\Presentation\Http\Controller\Api\Admin\AuthController::logoutAction
-  methods: GET
+  path: /api/admin/auth/logout/
+  controller: App\Presentation\Http\Controller\Api\Admin\Auth\Logout\ActionController
+  methods: POST
 
 admin_chats_list:
   path: /api/admin/chats
