@@ -12,6 +12,7 @@ use Doctrine\ORM\Mapping\Entity;
 use Doctrine\ORM\Mapping\Id;
 use Doctrine\ORM\Mapping\Index;
 use Doctrine\ORM\Mapping\Table;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 /**
  * Admin panel session for access control.
@@ -22,7 +23,7 @@ use Doctrine\ORM\Mapping\Table;
 #[Table(name: 'admin_sessions')]
 #[Index(columns: ['user_id'], name: 'idx_admin_sessions_user_id')]
 #[Index(columns: ['expires_at'], name: 'idx_admin_sessions_expires_at')]
-class AdminSessionEntity
+class AdminSessionEntity implements UserInterface
 {
     #[Id]
     #[Column(type: Types::STRING, length: 36)]
@@ -61,5 +62,19 @@ class AdminSessionEntity
     public function refreshExpiry(int $expiresInSeconds = 3600): void
     {
         $this->expiresAt = (new DateTimeImmutable())->modify("+$expiresInSeconds seconds");
+    }
+
+    public function getRoles(): array
+    {
+        return ['ROLE_USER'];
+    }
+
+    public function eraseCredentials(): void
+    {
+    }
+
+    public function getUserIdentifier(): string
+    {
+        return (string) $this->userId;
     }
 }
