@@ -15,6 +15,7 @@ use App\Domain\Telegram\Repository\VoteRepository;
 use App\Domain\Telegram\Service\TelegramApiService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 class UsersController extends AbstractAdminController
 {
@@ -30,16 +31,19 @@ class UsersController extends AbstractAdminController
         parent::__construct($sessionService);
     }
 
-    public function listAction(int $chatId, Request $request): JsonResponse
-    {
+    public function listAction(
+        int $chatId,
+        Request $request,
+        #[CurrentUser]
+        AdminSessionEntity $session,
+    ): JsonResponse {
         $chat = $this->getChatWithAccess($chatId, $request);
         if (!$chat) {
             return $this->json(['error' => 'Chat not found or access denied'], 403);
         }
 
-        $session = $this->getSession($request);
         $this->logService->log(
-            $session?->userId ?? 0,
+            $session->userId,
             $chatId,
             AdminActionType::USER_LIST_VIEW,
             description: 'Viewed users list'
@@ -83,8 +87,13 @@ class UsersController extends AbstractAdminController
         return $response;
     }
 
-    public function detailsAction(int $chatId, int $userId, Request $request): JsonResponse
-    {
+    public function detailsAction(
+        int $chatId,
+        int $userId,
+        Request $request,
+        #[CurrentUser]
+        AdminSessionEntity $session,
+    ): JsonResponse {
         $chat = $this->getChatWithAccess($chatId, $request);
         if (!$chat) {
             return $this->json(['error' => 'Chat not found or access denied'], 403);
@@ -95,9 +104,8 @@ class UsersController extends AbstractAdminController
             return $this->json(['error' => 'User not found in chat'], 404);
         }
 
-        $session = $this->getSession($request);
         $this->logService->log(
-            $session?->userId ?? 0,
+            $session->userId,
             $chatId,
             AdminActionType::USER_DETAILS_VIEW,
             ['targetUserId' => $userId],
@@ -138,8 +146,13 @@ class UsersController extends AbstractAdminController
         return $response;
     }
 
-    public function unbanAction(int $chatId, int $userId, Request $request): JsonResponse
-    {
+    public function unbanAction(
+        int $chatId,
+        int $userId,
+        Request $request,
+        #[CurrentUser]
+        AdminSessionEntity $session,
+    ): JsonResponse {
         $chat = $this->getChatWithAccess($chatId, $request);
         if (!$chat) {
             return $this->json(['error' => 'Chat not found or access denied'], 403);
@@ -155,7 +168,6 @@ class UsersController extends AbstractAdminController
             return $this->json(['error' => 'User is not banned'], 400);
         }
 
-        $session = $this->getSession($request);
         try {
             $this->telegramApiService->unbanChatMember($chatId, $userId);
         } catch (\Throwable $e) {
@@ -170,7 +182,7 @@ class UsersController extends AbstractAdminController
         $this->banRepository->flush();
 
         $this->logService->log(
-            $session?->userId ?? 0,
+            $session->userId,
             $chatId,
             AdminActionType::UNBAN_USER,
             ['targetUserId' => $userId, 'bansCount' => count($activeBans)],
@@ -186,15 +198,5 @@ class UsersController extends AbstractAdminController
         $this->refreshSessionCookie($request, $response);
 
         return $response;
-    }
-
-    private function getSession(Request $request): ?AdminSessionEntity
-    {
-        $token = $this->getTokenFromRequest($request);
-        if (!$token) {
-            return null;
-        }
-
-        return $this->sessionService->validateSession($token);
     }
 }

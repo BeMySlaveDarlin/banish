@@ -9,11 +9,11 @@ use App\Domain\Admin\Repository\AdminSessionRepository;
 use Psr\Log\LoggerInterface;
 use Ramsey\Uuid\Uuid;
 
-final class AdminSessionService
+final readonly class AdminSessionService
 {
     public function __construct(
-        private readonly AdminSessionRepository $sessionRepository,
-        private readonly LoggerInterface $logger,
+        private AdminSessionRepository $sessionRepository,
+        private LoggerInterface $logger,
     ) {
     }
 
