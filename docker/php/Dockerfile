@@ -1,8 +1,17 @@
+FROM composer:2.5.8 AS composer
 FROM php:8.3-fpm AS php_base
+
+COPY --from=composer /usr/bin/composer /usr/bin/composer
 
 ARG APP_PORT
 ARG TIMEZONE
-ARG COMPOSER_VERSION
+ARG UID
+ARG GID
+
+RUN <<EOF
+  groupmod --gid=${GID} www-data
+  usermod --uid=${UID} --gid=${GID} www-data
+EOF
 
 RUN apt update && apt install -y \
     apt-utils gnupg g++ git procps openssl  \
@@ -46,14 +55,10 @@ RUN sed -i "s/pm.max_children = 5/pm.max_children = 200/" /usr/local/etc/php-fpm
     && sed -i "s/;pm.status_path = \/status/pm.status_path = \/status/" /usr/local/etc/php-fpm.conf \
     && sed -i "s/;ping.path = \/ping/ping.path = \/ping/" /usr/local/etc/php-fpm.conf
 
-RUN php -r "readfile('https://getcomposer.org/installer');" |  \
-    php -- --install-dir=/usr/bin/ --filename=composer --version=${COMPOSER_VERSION} \
-    && mkdir /run/php
-
 RUN echo 'alias console="php bin/console"' >> ~/.bashrc
 
-ENV COMPOSER_ALLOW_SUPERUSER=1
-ENV PATH /root/composer/vendor/bin:/var/www/app/vendor/bin:/var/www/app/bin:${PATH}
+ENV PATH /var/www/app/vendor/bin:/var/www/app/bin:${PATH}
+ENV COMPOSER_CACHE_DIR=/tmp/composer/cache
 
 WORKDIR /var/www/app
 
@@ -70,6 +75,8 @@ RUN pecl update-channels
 RUN pecl install xdebug
 RUN docker-php-ext-enable xdebug
 
+USER www-data
+
 RUN mkdir -p /var/www/app/public/phpca \
     && composer install \
     && composer dump-autoload --classmap-authoritative \
@@ -84,6 +91,8 @@ ENV APP_ENV=prod
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 COPY --link conf.d/app.prod.ini $PHP_INI_DIR/conf.d/
 
+USER www-data
+
 RUN mkdir -p /var/www/app/public/phpca \
     && composer install --no-cache --prefer-dist --no-dev --no-autoloader --no-scripts \
     && composer dump-autoload --classmap-authoritative --no-dev \
@@ -94,6 +103,9 @@ RUN mkdir -p /var/www/app/public/phpca \
 FROM php_dev AS php_dev_supervisor
 
 RUN apt-get update && apt-get install -y supervisor
+
+USER www-data
+
 RUN mkdir -p /var/log/supervisor
 
 COPY --link supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
@@ -102,7 +114,12 @@ CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/conf.d/supervisord.con
 
 FROM php_prod AS php_prod_supervisor
 
+USER root
+
 RUN apt-get update && apt-get install -y supervisor
+
+USER www-data
+
 RUN mkdir -p /var/log/supervisor
 
 COPY --link supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf

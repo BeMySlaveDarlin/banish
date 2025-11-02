@@ -1,3 +1,6 @@
+export UID=$(shell id -u)
+export GID=$(shell id -g)
+
 include .env
 
 ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
