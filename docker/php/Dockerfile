@@ -9,8 +9,11 @@ ARG UID
 ARG GID
 
 RUN <<EOF
-  groupmod --gid=${GID} www-data
-  usermod --uid=${UID} --gid=${GID} www-data
+  set -xe
+  if [ "${UID}" != "0" ] || [ "${GID}" != "0" ]; then
+      groupmod --gid=${GID} www-data
+      usermod --uid=${UID} --gid=${GID} www-data
+  fi
 EOF
 
 RUN apt update && apt install -y \

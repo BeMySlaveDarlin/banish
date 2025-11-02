@@ -5,7 +5,7 @@ include .env
 
 ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
-all: clear-all build up composer-install db-migrate var-preps cleanup-updates
+all: clear-all var-preps build up composer-install db-migrate cleanup-updates
 restart: down clear-all all
 build:
 	@echo "Building containers"
@@ -27,7 +27,8 @@ var-preps:
 	@sudo mkdir -p var/cache
 	@sudo mkdir -p var/log
 	@sudo mkdir -p var/log/supervisor
-	@sudo chmod -R 777 var/*
+	@sudo mkdir -p vendor
+	@sudo chmod -R 777 var vendor
 
 db-migrate:
 	@echo "Running database migrations"
@@ -58,6 +59,7 @@ clear-logs:
 	@echo "Clearing all logs"
 	@rm -rf var/log/*.log
 	@rm -rf var/log/supervisor/*.log
+	@rm -rf var/log/nginx/*.log
 
 phpstan:
 	@echo "Running PHPStan static analysis"

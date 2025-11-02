@@ -9,8 +9,6 @@ services:
         TIMEZONE: ${TIMEZONE}
         UID: ${UID}
         GID: ${GID}
-    volumes:
-      - .:/var/www/app
 
   supervisor:
     build:
@@ -21,10 +19,6 @@ services:
         TIMEZONE: ${TIMEZONE}
         UID: ${UID}
         GID: ${GID}
-    volumes:
-      - .:/var/www/app
-      - ./docker/php/supervisor/supervisord.conf:/etc/supervisor/supervisord.conf
-      - ./var/log/supervisor:/var/log/supervisor
 
   nginx:
     build:
@@ -32,3 +26,12 @@ services:
       args:
         UID: ${UID}
         GID: ${GID}
+
+  frontend:
+    build:
+      context: .
+      dockerfile: ./docker/node/Dockerfile
+      target: node_prod
+      args:
+        - VITE_API_URL=${VITE_API_URL}
+    ports: []
