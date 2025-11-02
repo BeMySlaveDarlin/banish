@@ -65,10 +65,7 @@ class RequestAdminLinkHandler implements TelegramHandlerInterface
         }
 
         if ($sentMessage && $sentMessage->message_id) {
-            $this->telegramApiService->deleteMessage(
-                $command->chat->chatId,
-                $command->update->message->message_id
-            );
+            $this->telegramApiService->deleteMessage((int) $command->chat->chatId, (int) $command->update->message->message_id);
         }
 
         return $text;

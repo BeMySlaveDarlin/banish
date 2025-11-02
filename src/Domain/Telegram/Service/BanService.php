@@ -52,7 +52,7 @@ class BanService
     private function deleteMessage(int $chatId, int $messageId): void
     {
         try {
-            $this->telegramApiService->deleteMessage($chatId, $messageId);
+            $this->telegramApiService->deleteMessage((int) $chatId, (int) $messageId);
         } catch (\Throwable $e) {
             $this->logger->warning('Failed to delete spam message', [
                 'chatId' => $chatId,
@@ -68,7 +68,7 @@ class BanService
         $messageIds = $this->requestHistoryRepository->getMessageIdsByFromId($chatId, $spammerId, $oneHourAgo);
 
         foreach ($messageIds as $messageId) {
-            $this->deleteMessage($chatId, $messageId);
+            $this->deleteMessage((int) $chatId, (int) $messageId);
         }
     }
 }
