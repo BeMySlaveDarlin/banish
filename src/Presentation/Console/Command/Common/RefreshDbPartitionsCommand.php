@@ -10,18 +10,16 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'app:common:refresh-db-partitions')]
+#[AsCommand(
+    name: 'app:common:refresh-db-partitions',
+    description: 'Refresh DB Partitions',
+)]
 class RefreshDbPartitionsCommand extends Command
 {
     public function __construct(
         private readonly PartitionService $partitionService,
     ) {
         parent::__construct();
-    }
-
-    protected function configure(): void
-    {
-        $this->setDescription('Refresh Db Partitions');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
