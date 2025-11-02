@@ -3,8 +3,8 @@ upstream php-upstream {
 }
 
 server {
-    listen 80;
-    listen 443 ssl;
+    listen 8080;
+    listen 8443 ssl;
     server_name ${NGINX_BACKEND_DOMAIN};
     root /var/www/app/public;
 
