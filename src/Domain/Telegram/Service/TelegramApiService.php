@@ -152,7 +152,7 @@ class TelegramApiService
                 return false;
             }
 
-            /** @var array<string, mixed> $json */
+            /** @var array<string, string> $json */
             $json = json_decode($content, true, 512, JSON_THROW_ON_ERROR);
             if (!isset($json['ok']) || !$json['ok']) {
                 $description = $json['description'] ?? 'Unknown error';

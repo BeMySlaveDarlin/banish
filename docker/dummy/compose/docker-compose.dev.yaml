@@ -7,9 +7,8 @@ services:
       args:
         APP_PORT: ${APP_PORT}
         TIMEZONE: ${TIMEZONE}
-        COMPOSER_VERSION: ${COMPOSER_VERSION}
-    volumes:
-      - .:/var/www/app
+        UID: ${UID}
+        GID: ${GID}
 
   supervisor:
     build:
@@ -18,12 +17,21 @@ services:
       args:
         APP_PORT: ${APP_PORT}
         TIMEZONE: ${TIMEZONE}
-        COMPOSER_VERSION: ${COMPOSER_VERSION}
-    volumes:
-      - .:/var/www/app
-      - ./docker/php/supervisor/supervisord.conf:/etc/supervisor/supervisord.conf
-      - ./var/log/supervisor:/var/log/supervisor
+        UID: ${UID}
+        GID: ${GID}
 
   nginx:
     build:
       context: ./docker/nginx
+      args:
+        UID: ${UID}
+        GID: ${GID}
+
+  frontend:
+    build:
+      context: .
+      dockerfile: ./docker/node/Dockerfile
+      target: node_dev
+      args:
+        - VITE_API_URL=${VITE_API_URL}
+    ports: []

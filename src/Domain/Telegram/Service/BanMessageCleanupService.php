@@ -42,11 +42,11 @@ class BanMessageCleanupService
                 $initialMessageDeleted = true;
 
                 if ($ban->banMessageId > 0) {
-                    $banMessageDeleted = $this->telegramApiService->deleteMessage($ban->chatId, $ban->banMessageId);
+                    $banMessageDeleted = $this->telegramApiService->deleteMessage((int) $ban->chatId, (int) $ban->banMessageId);
                 }
 
                 if ($ban->initialMessageId !== null) {
-                    $initialMessageDeleted = $this->telegramApiService->deleteMessage($ban->chatId, $ban->initialMessageId);
+                    $initialMessageDeleted = $this->telegramApiService->deleteMessage((int) $ban->chatId, (int) $ban->initialMessageId);
                 }
 
                 if ($banMessageDeleted && $initialMessageDeleted) {
