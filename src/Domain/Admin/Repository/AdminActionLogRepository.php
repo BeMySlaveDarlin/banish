@@ -10,8 +10,6 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * Repository for admin action logs.
- *
  * @extends ServiceEntityRepository<AdminActionLogEntity>
  */
 class AdminActionLogRepository extends ServiceEntityRepository

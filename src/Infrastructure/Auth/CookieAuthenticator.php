@@ -24,11 +24,8 @@ final class CookieAuthenticator extends AbstractAuthenticator
     }
 
     /**
-     * Called on every request to decide if this authenticator should be
-     * used for the request. Returning `false` will cause this authenticator
-     * to be skipped.
-     *
      * @param Request $request
+     *
      * @return bool|null
      */
     public function supports(Request $request): ?bool
@@ -41,8 +38,6 @@ final class CookieAuthenticator extends AbstractAuthenticator
         $token = $this->getCredentials($request);
 
         if ($token === '') {
-            // The token header was empty, authentication fails with HTTP Status
-            // Code 401 "Unauthorized"
             throw new CustomUserMessageAuthenticationException('No token provided');
         }
 
@@ -61,7 +56,6 @@ final class CookieAuthenticator extends AbstractAuthenticator
 
     public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
     {
-        // on success, let the request continue
         return null;
     }
 
@@ -69,8 +63,6 @@ final class CookieAuthenticator extends AbstractAuthenticator
     {
         $responseBody = [
             'error' => \strtr($exception->getMessageKey(), $exception->getMessageData()),
-            // or to translate this message
-            // $this->translator->trans($exception->getMessageKey(), $exception->getMessageData())
         ];
 
         return new JsonResponse($responseBody, Response::HTTP_UNAUTHORIZED);

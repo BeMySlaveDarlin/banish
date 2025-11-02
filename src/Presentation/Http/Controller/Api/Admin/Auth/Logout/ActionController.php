@@ -23,7 +23,6 @@ class ActionController extends AbstractAdminController
         parent::__construct($sessionService);
     }
 
-    //#[Route(path: '/api/admin/auth/logout/', methods: ['POST'])]
     public function __invoke(
         Request $request,
         #[CurrentUser]

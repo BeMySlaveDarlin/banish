@@ -57,7 +57,7 @@ jobs:
         continue-on-error: true
 
       - name: Run PHPCS
-        run: vendor/bin/phpcs --standard=PSR12 src/
+        run: vendor/bin/phpcs src/
         continue-on-error: true
 
       - name: Check services compilation

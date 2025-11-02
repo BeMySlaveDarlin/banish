@@ -13,7 +13,6 @@ use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 
 final class ActionController extends AbstractController
 {
-    //#[Route(path: '/api/admin/auth/login/', methods: ['POST'])]
     public function __invoke(
         #[MapRequestPayload]
         RequestDto $dto,

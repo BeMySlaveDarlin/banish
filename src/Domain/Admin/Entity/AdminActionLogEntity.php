@@ -15,9 +15,6 @@ use Doctrine\ORM\Mapping\Id;
 use Doctrine\ORM\Mapping\Index;
 use Doctrine\ORM\Mapping\Table;
 
-/**
- * Log of admin actions for audit trail.
- */
 #[Entity(repositoryClass: AdminActionLogRepository::class)]
 #[Table(name: 'admin_action_logs')]
 #[Index(columns: ['user_id'], name: 'idx_admin_action_logs_user_id')]

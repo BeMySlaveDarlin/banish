@@ -18,11 +18,11 @@ final readonly class AdminSessionService
     }
 
     /**
-     * @param string $token Access token
-     * @param int $userId Telegram user ID
-     * @param int $expiresInSeconds Session duration (default 1 hour)
+     * @param string $token
+     * @param int $userId
+     * @param int $expiresInSeconds
      *
-     * @return AdminSessionEntity Created session
+     * @return AdminSessionEntity
      */
     public function createSession(
         string $token,
@@ -63,6 +63,8 @@ final readonly class AdminSessionService
     }
 
     /**
+     * @param int $userId
+     *
      * @return AdminSessionEntity[]
      */
     public function getActiveSessions(int $userId): array

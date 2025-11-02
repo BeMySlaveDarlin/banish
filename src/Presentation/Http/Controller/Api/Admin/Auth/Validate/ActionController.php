@@ -20,7 +20,6 @@ final class ActionController extends AbstractAdminController
         parent::__construct($sessionService);
     }
 
-    //#[Route(path: '/api/admin/auth/validate/', methods: ['POST'])]
     public function __invoke(
         Request $request,
         #[CurrentUser]
@@ -32,12 +31,15 @@ final class ActionController extends AbstractAdminController
             $userName = $adminChats[0]->userName ?? $adminChats[0]->username;
         }
 
-        $response = $this->json(new ResponseDto(
-            valid: true,
-            userId: $session->userId,
-            userName: $userName,
-            expiresAt: $session->expiresAt,
-        ), Response::HTTP_OK);
+        $response = $this->json(
+            new ResponseDto(
+                valid: true,
+                userId: $session->userId,
+                userName: $userName,
+                expiresAt: $session->expiresAt,
+            ),
+            Response::HTTP_OK
+        );
 
         $this->refreshSessionCookie($request, $response);
 

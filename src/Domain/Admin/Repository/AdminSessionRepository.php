@@ -9,8 +9,6 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * Repository for admin sessions.
- *
  * @extends ServiceEntityRepository<AdminSessionEntity>
  */
 class AdminSessionRepository extends ServiceEntityRepository
@@ -55,6 +53,7 @@ class AdminSessionRepository extends ServiceEntityRepository
             ->where('s.expiresAt < CURRENT_TIMESTAMP()')
             ->getQuery()
             ->execute();
+
         return is_int($result) ? $result : (int) $result;
     }
 

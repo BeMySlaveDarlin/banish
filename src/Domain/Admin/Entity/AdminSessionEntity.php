@@ -14,11 +14,6 @@ use Doctrine\ORM\Mapping\Index;
 use Doctrine\ORM\Mapping\Table;
 use Symfony\Component\Security\Core\User\UserInterface;
 
-/**
- * Admin panel session for access control.
- * Token generated and sent to user in Telegram link.
- * Valid for 1 hour.
- */
 #[Entity(repositoryClass: AdminSessionRepository::class)]
 #[Table(name: 'admin_sessions')]
 #[Index(columns: ['user_id'], name: 'idx_admin_sessions_user_id')]
