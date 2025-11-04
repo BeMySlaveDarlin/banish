@@ -27,6 +27,7 @@ var-preps:
 	@sudo mkdir -p var/cache
 	@sudo mkdir -p var/log
 	@sudo mkdir -p var/log/supervisor
+	@sudo mkdir -p var/ssl
 	@sudo cp -n docker/dummy/ssl/* var/ssl/
 	@sudo mkdir -p vendor
 	@sudo chmod -R 777 var vendor
