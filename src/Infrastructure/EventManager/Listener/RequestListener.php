@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\EventManager\Listener;
 
-use App\Infrastructure\Metrics\RequestMetrics;
+use App\Infrastructure\Metrics\RequestMetricsFactory;
 use Monolog\Level;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
@@ -15,7 +15,7 @@ class RequestListener
 {
     public function __construct(
         protected LoggerInterface $logger,
-        protected RequestMetrics $requestMetrics
+        protected RequestMetricsFactory $metricsFactory
     ) {
     }
 
@@ -23,6 +23,7 @@ class RequestListener
     {
         $request = $event->getRequest();
         $response = $event->getResponse();
+        $requestMetrics = $this->metricsFactory->create();
 
         $requestData = [
             'params' => $request->toArray(),
@@ -41,6 +42,7 @@ class RequestListener
             'uri' => $request->getRequestUri(),
             'request' => $requestData,
             'response' => $response->getContent(),
+            ...$requestMetrics->getContext(),
         ]);
     }
 }

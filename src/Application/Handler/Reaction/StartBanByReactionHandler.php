@@ -11,12 +11,12 @@ use App\Domain\Telegram\Constants\Messages;
 use App\Domain\Telegram\Enum\VoteType;
 use App\Domain\Telegram\Repository\BanRepository;
 use App\Domain\Telegram\Repository\RequestHistoryRepository;
-use App\Domain\Telegram\Repository\UserRepository;
 use App\Domain\Telegram\Repository\VoteRepository;
 use App\Domain\Telegram\Service\BanService;
 use App\Domain\Telegram\Service\ChatConfigServiceInterface;
 use App\Domain\Telegram\Service\TelegramApiService;
 use App\Domain\Telegram\Service\TrustService;
+use App\Domain\Telegram\Service\UserPersister;
 use App\Domain\Telegram\Service\VoteService;
 use Psr\Log\LoggerInterface;
 
@@ -25,13 +25,13 @@ class StartBanByReactionHandler implements TelegramHandlerInterface
     public function __construct(
         private readonly BanRepository $banRepository,
         private readonly VoteRepository $voteRepository,
-        private readonly UserRepository $userRepository,
         private readonly RequestHistoryRepository $requestHistoryRepository,
         private readonly TelegramApiService $telegramApiService,
         private readonly TrustService $trustService,
         private readonly ChatConfigServiceInterface $chatConfigService,
         private readonly VoteService $voteService,
         private readonly BanService $banService,
+        private readonly UserPersister $userPersister,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -93,7 +93,7 @@ class StartBanByReactionHandler implements TelegramHandlerInterface
         }
 
         if ($this->trustService->isUserTrusted($command->chat, $spammerUserId)) {
-            $this->logger->info('Trusted user cannot be banned via reaction', [
+            $this->logger->warning('Trusted user cannot be banned via reaction', [
                 'userId' => $spammerUserId,
                 'chatId' => $command->chat->chatId,
             ]);
@@ -101,19 +101,10 @@ class StartBanByReactionHandler implements TelegramHandlerInterface
             return Messages::MESSAGE_USER_IS_TRUSTED;
         }
 
-        $spammer = $this->userRepository->findByChatAndUser(
-            $command->chat->chatId,
-            $spammerUserId
+        $spammer = $this->userPersister->persist(
+            $command->update->getChat(),
+            $chatSpammer->user
         );
-
-        if ($spammer === null) {
-            $spammer = $this->userRepository->createUser(
-                $command->chat->chatId,
-                $spammerUserId
-            );
-            $spammer->name = $chatSpammer->user->getAlias();
-            $this->userRepository->save($spammer);
-        }
 
         $ban = $this->banRepository->createBan(
             $command->chat->chatId,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Command\Telegram;
 
 use App\Domain\Telegram\Command\TelegramCommandInterface;
+use App\Domain\Telegram\ValueObject\TelegramUpdate;
 
 class UnsupportedCommand implements TelegramCommandInterface
 {
@@ -26,5 +27,10 @@ class UnsupportedCommand implements TelegramCommandInterface
     public function getOldStatus(): ?string
     {
         return null;
+    }
+
+    public function getUpdate(): TelegramUpdate
+    {
+        return new TelegramUpdate();
     }
 }

@@ -8,14 +8,14 @@ use App\Domain\Telegram\Command\TelegramCommandInterface;
 use App\Domain\Telegram\Command\TelegramHandlerInterface;
 use App\Domain\Telegram\Constants\Messages;
 use App\Domain\Telegram\Enum\UserStatus;
-use App\Domain\Telegram\Repository\ChatRepository;
 use App\Domain\Telegram\Repository\UserRepository;
+use App\Domain\Telegram\Service\UserPersister;
 
 class MyChatMemberHandler implements TelegramHandlerInterface
 {
     public function __construct(
-        private readonly ChatRepository $chatRepository,
-        private readonly UserRepository $userRepository
+        private readonly UserRepository $userRepository,
+        private readonly UserPersister $userPersister
     ) {
     }
 
@@ -26,13 +26,13 @@ class MyChatMemberHandler implements TelegramHandlerInterface
         $userId = $command->getUserId();
         $chatId = $command->getChatId();
 
-        $chat = $this->chatRepository->findByChatId($chatId);
-        if (!$chat) {
+        $myChatMember = $command->update->my_chat_member;
+        if (!$myChatMember) {
             return Messages::MESSAGE_BOT_DISABLED;
         }
 
         if ($oldStatus === 'left' && $newStatus === 'member') {
-            return $this->handleUserJoined($chatId, $userId);
+            return $this->handleUserJoined($myChatMember->chat, $myChatMember->from);
         }
 
         if ($oldStatus === 'member' && $newStatus === 'left') {
@@ -46,16 +46,9 @@ class MyChatMemberHandler implements TelegramHandlerInterface
         return Messages::MESSAGE_BOT_DISABLED;
     }
 
-    private function handleUserJoined(int $chatId, int $userId): string
+    private function handleUserJoined($chat, $user): string
     {
-        $existingUser = $this->userRepository->findByChatAndUser($chatId, $userId);
-
-        if ($existingUser === null) {
-            $user = $this->userRepository->createUser($chatId, $userId);
-            $this->userRepository->save($user);
-
-            return Messages::MESSAGE_BOT_DISABLED;
-        }
+        $this->userPersister->persist($chat, $user);
 
         return Messages::MESSAGE_BOT_DISABLED;
     }

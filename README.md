@@ -22,7 +22,7 @@
 
 ### Tech Stack
 
-**Backend:** PHP 8.3 • Symfony 6.4 • PostgreSQL 15 • Redis • RabbitMQ
+**Backend:** PHP 8.3 • Symfony 6.4 • PostgreSQL 15 • RabbitMQ
 **Frontend:** Vue.js 3 • Vite • Vue Router
 **Infrastructure:** Docker • Nginx • Supervisor
 
@@ -33,16 +33,19 @@
 ### Starting a Ban Procedure
 
 **Option 1: Command**
+
 ```
 Reply to spammer's message: /ban
 ```
 
 **Option 2: Bot Mention**
+
 ```
 Reply to spammer's message: @bot_name
 ```
 
 **Option 3: Reaction**
+
 ```
 Long-press message → Add reaction → Select ban emoji (default: 👎)
 ```
@@ -52,10 +55,12 @@ Long-press message → Add reaction → Select ban emoji (default: 👎)
 After ban procedure starts, members vote using:
 
 **Inline Buttons**
+
 - 🔨 Ban — vote for ban
 - 🕊️ Forgive — vote for forgiveness
 
 **Reactions on Original Message**
+
 - Ban emoji (👎) = vote for ban
 - Forgive emoji (👍) = vote for forgiveness
 - Remove reaction = cancel vote
@@ -69,10 +74,10 @@ When required vote count is reached (configurable):
 
 ### Bot Commands
 
-| Command | Description | Access |
-|---------|-------------|--------|
-| `/help` | Bot help | Everyone |
-| `/ban` | Start ban procedure | Everyone |
+| Command  | Description          | Access      |
+|----------|----------------------|-------------|
+| `/help`  | Bot help             | Everyone    |
+| `/ban`   | Start ban procedure  | Everyone    |
 | `/admin` | Get admin panel link | Chat admins |
 
 ### Admin Panel
@@ -124,29 +129,32 @@ cp .env.example .env
 
 **Required .env parameters:**
 
-| Parameter | Description |
-|-----------|-------------|
-| `APP_ENV` | Environment: `prod`, `dev`, `local`, `test` |
-| `APP_SECRET` | Webhook signature secret (random string) |
-| `TELEGRAM_BOT_NAME` | Bot username without `@` |
-| `TELEGRAM_BOT_TOKEN` | Bot API token from BotFather |
-| `DATABASE_PORTS` | PostgreSQL port (change from default) |
-| `MEMCACHED_PORTS` | Memcached port (change from default) |
+| Parameter            | Description                                 |
+|----------------------|---------------------------------------------|
+| `APP_ENV`            | Environment: `prod`, `dev`, `local`, `test` |
+| `APP_SECRET`         | Webhook signature secret (random string)    |
+| `TELEGRAM_BOT_NAME`  | Bot username without `@`                    |
+| `TELEGRAM_BOT_TOKEN` | Bot API token from BotFather                |
+| `DATABASE_PORTS`     | PostgreSQL port (change from default)       |
+| `MEMCACHED_PORTS`    | Memcached port (change from default)        |
 
 ### SSL Certificates
 
 **For production:**
 Place in `var/ssl/`:
+
 - `server.crt` — public certificate
 - `server.key` — private key
 
 **For development:**
 Certificates are generated automatically on first build:
+
 ```bash
 make                  # Automatically generates SSL for NGINX_BACKEND_DOMAIN
 ```
 
 Or manually:
+
 ```bash
 mkdir -p var/ssl
 openssl req -x509 -newkey rsa:4096 -keyout var/ssl/server.key -out var/ssl/server.crt -days 365 -nodes -subj "/CN=${NGINX_BACKEND_DOMAIN:-localhost}"
@@ -169,38 +177,42 @@ make clear-cache      # Clear cache
 ### Telegram Setup
 
 **1. Create Bot**
+
 - Talk to [@BotFather](https://telegram.me/BotFather)
 - Create new bot, get token
 
 **2. Set Webhook**
+
 ```bash
 curl "https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://<DOMAIN>/api/telegram/webhook/<APP_SECRET>"
 ```
 
 Verify:
+
 ```bash
 curl "https://api.telegram.org/bot<TOKEN>/getWebhookInfo"
 ```
 
 **3. Add to Group**
+
 - Add bot as member with permissions:
-  - Read messages
-  - Send messages
-  - Delete messages
-  - Ban users
+    - Read messages
+    - Send messages
+    - Delete messages
+    - Ban users
 
 ### Group Settings
 
 For reaction voting to work:
 
 1. **Enable Reactions**
-   - Group Settings → Reactions → Enable
+    - Group Settings → Reactions → Enable
 
 2. **Bot Receives Updates**
-   - Webhook has `message_reaction` in `allowed_updates`
+    - Webhook has `message_reaction` in `allowed_updates`
 
 3. **Enable in Admin Panel**
-   - Set `enableReactions: true` (default)
+    - Set `enableReactions: true` (default)
 
 ### Per-Chat Configuration
 
@@ -229,7 +241,8 @@ SET rule = '1 day'
 WHERE schedule = 'clear_bot_messages';
 
 -- Disable cleanup
-DELETE FROM queue_schedule_rule
+DELETE
+FROM queue_schedule_rule
 WHERE schedule = 'clear_bot_messages';
 ```
 
@@ -238,19 +251,23 @@ WHERE schedule = 'clear_bot_messages';
 ## Troubleshooting
 
 **Reactions not creating ban:**
+
 - Verify reactions enabled in group settings
 - Check webhook has `message_reaction` in `allowed_updates`
 - View logs: `docker-compose logs app`
 
 **Voting doesn't work:**
+
 - Verify correct emoji in admin panel
 - Check chat enabled (`enabled: true`)
 - Check vote count threshold
 
 **"Admin is immune" message:**
+
 - Expected — group admins cannot be banned
 
 **Webhook issues:**
+
 - Test: `curl "https://api.telegram.org/bot<TOKEN>/getWebhookInfo"`
 - Verify domain DNS resolves
 - Check HTTPS certificate is valid

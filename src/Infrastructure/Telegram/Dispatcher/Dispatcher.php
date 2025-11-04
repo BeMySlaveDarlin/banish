@@ -6,8 +6,8 @@ namespace App\Infrastructure\Telegram\Dispatcher;
 
 use App\Application\Command\Telegram\UnsupportedCommand;
 use App\Domain\Telegram\Command\TelegramCommandInterface;
-use App\Domain\Telegram\Repository\ChatRepository;
-use App\Domain\Telegram\Repository\UserRepository;
+use App\Domain\Telegram\Service\ChatPersister;
+use App\Domain\Telegram\Service\UserPersister;
 use App\Domain\Telegram\ValueObject\TelegramUpdate;
 use App\Infrastructure\Telegram\Middleware\MiddlewareManager;
 use App\Infrastructure\Telegram\Routing\Router;
@@ -18,8 +18,8 @@ class Dispatcher
         private readonly Router $router,
         private readonly CommandHandlerFactory $handlerFactory,
         private readonly MiddlewareManager $middlewareManager,
-        private readonly ChatRepository $chatRepository,
-        private readonly UserRepository $userRepository
+        private readonly ChatPersister $chatPersister,
+        private readonly UserPersister $userPersister
     ) {
     }
 
@@ -33,24 +33,14 @@ class Dispatcher
 
     private function getCommand(TelegramUpdate $update, string $commandClass): UnsupportedCommand | TelegramCommandInterface
     {
-        $chatId = $update->getChat()->id ?? 0;
-        $fromId = $update->getFrom()->id ?? 0;
-
-        if (0 === $chatId || 0 === $fromId) {
+        $tgChat = $update->getChat();
+        $tgUser = $update->getFrom();
+        if (!$tgChat?->id || !$tgUser?->id) {
             return new UnsupportedCommand();
         }
-        $chatType = $update->getChat()->type ?? '';
-        $chat = $this->chatRepository->findByChatId($chatId);
-        if (null === $chat) {
-            $chat = $this->chatRepository->createChat($chatId, $chatType);
-            $this->chatRepository->save($chat);
-        }
 
-        $user = $this->userRepository->findByChatAndUser($chatId, $fromId);
-        if (null === $user) {
-            $user = $this->userRepository->createUser($chatId, $fromId);
-            $this->userRepository->save($user);
-        }
+        $chat = $this->chatPersister->persist($tgChat);
+        $user = $this->userPersister->persist($tgChat, $tgUser);
 
         /** @var TelegramCommandInterface $command */
         $command = new $commandClass($update, $chat, $user);

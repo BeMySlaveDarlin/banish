@@ -8,12 +8,14 @@ use App\Infrastructure\Metrics\RequestMetrics;
 use Monolog\Formatter\FormatterInterface;
 use Monolog\LogRecord;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 class JsonFormatter implements FormatterInterface
 {
     public function __construct(
         private readonly ParameterBagInterface $params,
-        private readonly RequestMetrics $requestMetrics
+        private readonly RequestStack $requestStack
     ) {
     }
 
@@ -55,15 +57,20 @@ class JsonFormatter implements FormatterInterface
      */
     public function formatContext(array $context): array
     {
-        $metricsTimestamps = $this->requestMetrics->getMetrics();
-        $metricsContext = $this->requestMetrics->getContext();
+        $request = $this->requestStack->getCurrentRequest();
+        $requestMetrics = $request?->attributes->get('request_metrics');
 
         $context['app'] = $this->params->get('app.name');
         $context['env'] = $this->params->get('app.env');
 
-        $context['rid'] = $metricsContext['request_id'] ?? null;
-        $context['uri'] = $context['uri'] ?? $metricsContext['uri'] ?? null;
-        $context['metrics'] = $context['metrics'] ?? $metricsTimestamps;
+        if ($requestMetrics instanceof RequestMetrics) {
+            $metricsTimestamps = $requestMetrics->getMetrics();
+            $metricsContext = $requestMetrics->getContext();
+
+            $context['rid'] = $metricsContext['request_id'] ?? null;
+            $context['uri'] = $context['uri'] ?? $metricsContext['uri'] ?? null;
+            $context['metrics'] = $context['metrics'] ?? $metricsTimestamps;
+        }
 
         return $context;
     }

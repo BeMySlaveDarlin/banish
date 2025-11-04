@@ -36,6 +36,7 @@ services:
             - '../src/Domain/*/Enum/'
             - '../src/Domain/*/ValueObject/'
             - '../src/Application/Command/'
+            - '../src/Infrastructure/Metrics/RequestMetrics.php'
 
     Psr\Container\ContainerInterface: '@service_container'
 
@@ -61,7 +62,6 @@ services:
         arguments:
             $middlewares:
                 - '@App\Infrastructure\Telegram\Middleware\DeduplicationMiddleware'
-                - '@App\Infrastructure\Telegram\Middleware\ChatPersistenceMiddleware'
 
     App\Domain\Telegram\Service\ChatConfigServiceInterface:
         alias: App\Domain\Telegram\Service\ChatConfigService

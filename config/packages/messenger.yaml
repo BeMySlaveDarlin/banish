@@ -17,11 +17,8 @@ framework:
                 dsn: '%env(MESSENGER_SCHEDULER_PARTITIONS_DSN)%'
             scheduler_clear_bot_messages:
                 dsn: '%env(MESSENGER_SCHEDULER_CLEAR_BOT_MESSAGES_DSN)%'
-            scheduler_sync_chat_users:
-                dsn: '%env(MESSENGER_SCHEDULER_SYNC_CHAT_USERS_DSN)%'
 
         routing:
             'App\Application\Message\TelegramUpdateMessage': async
             'App\Infrastructure\Scheduler\Common\RefreshDbPartitionsMessage': scheduler_partitions
             'App\Infrastructure\Scheduler\Telegram\ClearBotMessagesMessage': scheduler_clear_bot_messages
-            'App\Infrastructure\Scheduler\Telegram\SyncChatUsersMessage': scheduler_sync_chat_users

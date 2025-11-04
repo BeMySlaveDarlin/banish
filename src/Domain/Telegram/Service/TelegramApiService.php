@@ -10,6 +10,7 @@ use App\Domain\Telegram\ValueObject\Bot\TelegramEditReplyMarkup;
 use App\Domain\Telegram\ValueObject\Bot\TelegramSendMessage;
 use App\Domain\Telegram\ValueObject\Bot\TelegramWebHookInfo;
 use App\Domain\Telegram\ValueObject\TelegramMessage;
+use Psr\Cache\CacheItemPoolInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\HttpFoundation\Exception\BadRequestException;
@@ -47,6 +48,7 @@ class TelegramApiService
     ];
 
     private const int DEFAULT_TIMEOUT = 10;
+    private const int CHAT_MEMBER_CACHE_TTL = 300;
 
     /** @var array<string, HttpClientInterface> */
     private array $httpClients = [];
@@ -54,6 +56,7 @@ class TelegramApiService
     public function __construct(
         private readonly SerializerInterface $serializer,
         private readonly LoggerInterface $logger,
+        private readonly CacheItemPoolInterface $cache,
         private readonly string $botToken,
         private readonly string $apiUrl
     ) {
@@ -74,13 +77,24 @@ class TelegramApiService
             return null;
         }
 
+        $cacheKey = "chat_member_{$chatId}_{$userId}";
+        $cacheItem = $this->cache->getItem($cacheKey);
+
+        if ($cacheItem->isHit()) {
+            return $cacheItem->get();
+        }
+
         $result = $this->send(self::ACTION_GET_CHAT_MEMBER, ['chat_id' => $chatId, 'user_id' => $userId]);
         if (empty($result)) {
             return null;
         }
 
         try {
-            return $this->serializer->deserialize($result, TelegramChatMember::class, 'json');
+            $member = $this->serializer->deserialize($result, TelegramChatMember::class, 'json');
+            $cacheItem->set($member)->expiresAfter(self::CHAT_MEMBER_CACHE_TTL);
+            $this->cache->save($cacheItem);
+
+            return $member;
         } catch (Throwable $e) {
             $this->logger->error('Failed to deserialize TelegramChatMember', [
                 'error' => $e->getMessage(),

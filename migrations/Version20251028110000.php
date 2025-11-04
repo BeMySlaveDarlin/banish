@@ -20,15 +20,11 @@ final class Version20251028110000 extends AbstractMigration
         $this->addSql(
             "INSERT INTO queue_schedule_rule (schedule, rule, type, message, options, created_at) VALUES
             ('partitions', '0 0 1 * *', 'cron', 'App\Infrastructure\Scheduler\Common\RefreshDbPartitionsMessage', NULL, CURRENT_TIMESTAMP),
-            ('clear_bot_messages', '*/2 * * * *', 'cron', 'App\Infrastructure\Scheduler\Telegram\ClearBotMessagesMessage', NULL, CURRENT_TIMESTAMP),
-            ('sync_chat_users', '0 * * * *', 'cron', 'App\Infrastructure\Scheduler\Telegram\SyncChatUsersMessage', NULL, CURRENT_TIMESTAMP)"
+            ('clear_bot_messages', '*/2 * * * *', 'cron', 'App\Infrastructure\Scheduler\Telegram\ClearBotMessagesMessage', NULL, CURRENT_TIMESTAMP)"
         );
     }
 
     public function down(Schema $schema): void
     {
-        $this->addSql(
-            "DELETE FROM queue_schedule_rule WHERE schedule = 'sync_chat_users' AND message = 'App\Infrastructure\Scheduler\Telegram\SyncChatUsersMessage'"
-        );
     }
 }

@@ -36,11 +36,10 @@ RUN docker-php-ext-configure pgsql -with-pgsql=/usr/local/pgsql \
     && docker-php-ext-install pdo pdo_pgsql pgsql
 
 RUN pecl update-channels
-RUN pecl install redis
 RUN pecl install igbinary
 RUN pecl install memcached
 RUN pecl install amqp
-RUN docker-php-ext-enable redis igbinary memcached amqp
+RUN docker-php-ext-enable igbinary memcached amqp
 
 COPY --link conf.d/app.ini $PHP_INI_DIR/conf.d/
 RUN sed -i "s/pm.max_children = 5/pm.max_children = 200/" /usr/local/etc/php-fpm.d/www.conf \

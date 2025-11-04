@@ -18,6 +18,7 @@ use App\Domain\Telegram\Service\ChatConfigServiceInterface;
 use App\Domain\Telegram\Service\SpammerMessageService;
 use App\Domain\Telegram\Service\TelegramApiService;
 use App\Domain\Telegram\Service\TrustService;
+use App\Domain\Telegram\Service\UserPersister;
 use App\Domain\Telegram\ValueObject\Bot\TelegramInlineKeyboard;
 use App\Domain\Telegram\ValueObject\Bot\TelegramReplyMarkup;
 use App\Domain\Telegram\ValueObject\Bot\TelegramSendMessage;
@@ -36,6 +37,7 @@ class StartBanHandler implements TelegramHandlerInterface
         private readonly TrustService $trustService,
         private readonly ChatConfigServiceInterface $chatConfigService,
         private readonly BanMessageFormatter $messageFormatter,
+        private readonly UserPersister $userPersister,
         private readonly LoggerInterface $logger
     ) {
     }
@@ -83,19 +85,10 @@ class StartBanHandler implements TelegramHandlerInterface
             return Messages::MESSAGE_USER_IS_TRUSTED;
         }
 
-        $spammer = $this->userRepository->findByChatAndUser(
-            $command->chat->chatId,
-            $spammerMessage->from->id
+        $spammer = $this->userPersister->persist(
+            $command->update->getChat(),
+            $spammerMessage->from
         );
-
-        if ($spammer === null && $spammerMessage->from->id !== null) {
-            $spammer = $this->userRepository->createUser(
-                $command->chat->chatId,
-                $spammerMessage->from->id
-            );
-            $spammer->name = $spammerMessage->from->getAlias();
-            $this->userRepository->save($spammer);
-        }
 
         $existingBan = $this->banRepository->findBySpamMessage(
             $command->chat->chatId,

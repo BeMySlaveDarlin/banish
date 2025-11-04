@@ -17,6 +17,11 @@ abstract class AbstractTelegramCommand
     ) {
     }
 
+    public function getUpdate(): TelegramUpdate
+    {
+        return $this->update;
+    }
+
     public function getChatId(): int
     {
         return $this->chat->chatId;
