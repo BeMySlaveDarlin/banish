@@ -33,7 +33,6 @@
     "symfony/monolog-bundle": "^3.8",
     "symfony/property-access": "6.4.*",
     "symfony/property-info": "6.4.*",
-    "symfony/redis-messenger": "6.4.*",
     "symfony/routing": "6.4.*",
     "symfony/runtime": "6.4.*",
     "symfony/scheduler": "6.4.*",
