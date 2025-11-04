@@ -47,7 +47,8 @@ class BanMessageFormatter
         ?TelegramChatUserEntity $reporter,
         ?TelegramChatUserEntity $spammer,
         array $upVoters,
-        array $downVoters
+        array $downVoters,
+        bool $deleteOnlyMessage = false
     ): string {
         $texts = [
             sprintf(
@@ -72,8 +73,12 @@ class BanMessageFormatter
         }
 
         if (!$ban->isPending()) {
-            $status = $ban->isBanned() ? 'banned' : 'not banned';
-            $texts[] = sprintf("%s is %s", $spammer?->getAlias() ?? 'User', $status);
+            if ($deleteOnlyMessage) {
+                $texts[] = sprintf("%s message is %s", $spammer?->getAlias() ?? 'User', 'deleted');
+            } else {
+                $status = $ban->isBanned() ? 'banned' : 'not banned';
+                $texts[] = sprintf("%s is %s", $spammer?->getAlias() ?? 'User', $status);
+            }
         }
 
         return implode("\n", $texts);

@@ -29,7 +29,7 @@ class BanService
             $ban->status = BanStatus::BANNED;
             $this->telegramApiService->banChatMember($chat->chatId, $ban->spammerId);
         } else {
-            $ban->status = BanStatus::DELETED;
+            $ban->status = BanStatus::CANCELED;
         }
 
         if ($this->chatConfigService->isDeleteMessagesEnabled($chat)) {
