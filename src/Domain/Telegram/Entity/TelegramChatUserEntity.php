@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Telegram\Entity;
 
 use App\Domain\Telegram\Enum\UserStatus;

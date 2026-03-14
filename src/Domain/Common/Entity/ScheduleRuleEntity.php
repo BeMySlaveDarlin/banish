@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Common\Entity;
 
 use App\Domain\Common\Repository\ScheduleRuleRepository;
-use App\Infrastructure\Doctrine\Type\JsonBValue;
+use App\Domain\Common\ValueObject\JsonBValue;
 use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping\Column;

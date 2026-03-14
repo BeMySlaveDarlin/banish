@@ -15,15 +15,15 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
-class ChatsController extends AbstractAdminController
+final class ChatsController extends AbstractAdminController
 {
     public function __construct(
-        protected ChatRepository $chatRepository,
         protected BanRepository $banRepository,
-        protected UserRepository $userRepository,
+        UserRepository $userRepository,
+        ChatRepository $chatRepository,
         AdminSessionService $sessionService,
     ) {
-        parent::__construct($sessionService);
+        parent::__construct($sessionService, $userRepository, $chatRepository);
     }
 
     public function listAction(
@@ -42,18 +42,20 @@ class ChatsController extends AbstractAdminController
         $chatIds = array_map(static fn(TelegramChatUserEntity $cu) => $cu->chatId, $adminChats);
         $chats = $this->chatRepository->findBy(['chatId' => $chatIds]);
 
-        $chatsData = array_map(function (TelegramChatEntity $chat) {
-            $banCount = $this->banRepository->countByChat($chat->chatId);
-            $activeBans = $this->banRepository->countActiveBans($chat->chatId);
+        $banStats = $this->banRepository->countByChatsBatch($chatIds);
+        $memberCounts = $this->userRepository->countByChatsBatch($chatIds);
+
+        $chatsData = array_map(static function (TelegramChatEntity $chat) use ($banStats, $memberCounts) {
+            $chatBanStats = $banStats[$chat->chatId] ?? ['totalBans' => 0, 'activeBans' => 0];
 
             return [
                 'id' => $chat->chatId,
                 'title' => $chat->name,
-                'membersCount' => $this->userRepository->countByChat($chat->chatId),
+                'membersCount' => $memberCounts[$chat->chatId] ?? 0,
                 'isEnabled' => $chat->isEnabled,
                 'stats' => [
-                    'totalBans' => $banCount,
-                    'activeBans' => $activeBans,
+                    'totalBans' => $chatBanStats['totalBans'],
+                    'activeBans' => $chatBanStats['activeBans'],
                 ],
             ];
         }, $chats);

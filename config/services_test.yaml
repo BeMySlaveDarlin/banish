@@ -1,0 +1,15 @@
+services:
+    App\Tests\Mock\TelegramApiServiceMock:
+        public: true
+
+    App\Domain\Telegram\Service\TelegramApiServiceInterface:
+        alias: App\Tests\Mock\TelegramApiServiceMock
+
+    App\Domain\Telegram\Service\TelegramChatMemberApiInterface:
+        alias: App\Tests\Mock\TelegramApiServiceMock
+
+    App\Domain\Telegram\Service\TelegramMessageApiInterface:
+        alias: App\Tests\Mock\TelegramApiServiceMock
+
+    App\Domain\Telegram\Service\TelegramWebhookApiInterface:
+        alias: App\Tests\Mock\TelegramApiServiceMock

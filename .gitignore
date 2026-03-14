@@ -1,6 +1,7 @@
 .idea/*
 ###> symfony/framework-bundle ###
 /.env
+/.env.test
 /config/secrets/prod/prod.decrypt.private.php
 /public/bundles/
 /var/
@@ -14,3 +15,9 @@
 /docker-compose.override.yaml
 /docker-compose.prod.yaml
 ###< docker ###
+
+###> phpunit/phpunit ###
+/phpunit.xml
+/.phpunit.cache/
+###< phpunit/phpunit ###
+/.playwright-mcp/

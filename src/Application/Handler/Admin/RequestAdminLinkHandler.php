@@ -9,16 +9,19 @@ use App\Domain\Telegram\Command\TelegramCommandInterface;
 use App\Domain\Telegram\Command\TelegramHandlerInterface;
 use App\Domain\Telegram\Constants\Messages;
 use App\Domain\Telegram\Repository\UserRepository;
-use App\Domain\Telegram\Service\TelegramApiService;
+use App\Domain\Telegram\Service\TelegramMessageApiInterface;
 use App\Domain\Telegram\ValueObject\Bot\TelegramSendMessage;
+use App\Infrastructure\Telegram\Attribute\AsTelegramHandler;
+use App\Application\Command\Telegram\Admin\RequestAdminLinkCommand;
 
-class RequestAdminLinkHandler implements TelegramHandlerInterface
+#[AsTelegramHandler(RequestAdminLinkCommand::class)]
+final readonly class RequestAdminLinkHandler implements TelegramHandlerInterface
 {
     public function __construct(
-        private readonly AdminSessionService $sessionService,
-        private readonly UserRepository $userRepository,
-        private readonly TelegramApiService $telegramApiService,
-        private readonly string $adminPanelBaseUrl,
+        private AdminSessionService $sessionService,
+        private UserRepository $userRepository,
+        private TelegramMessageApiInterface $messageApi,
+        private string $adminPanelBaseUrl,
     ) {
     }
 
@@ -35,11 +38,15 @@ class RequestAdminLinkHandler implements TelegramHandlerInterface
 
         try {
             $session = $this->sessionService->getOrCreateSession($command->user->userId);
+            $exchangeToken = $this->sessionService->createExchangeToken(
+                $command->user->userId,
+                $session->id
+            );
 
             $adminLink = sprintf(
                 '%s/admin/auth/%s',
                 rtrim($this->adminPanelBaseUrl, '/'),
-                $session->id
+                $exchangeToken->id
             );
 
             $message = new TelegramSendMessage(
@@ -49,23 +56,23 @@ class RequestAdminLinkHandler implements TelegramHandlerInterface
                     "You manage <b>%d chat(s)</b>\n\n" .
                     "Click to access:\n" .
                     "%s\n\n" .
-                    "⏰ Link expires in 1 hour",
+                    "⏰ Link expires in 5 minutes (single use)",
                     count($adminChats),
                     $adminLink
                 )
             );
             $message->parse_mode = 'HTML';
 
-            $sentMessage = $this->telegramApiService->sendMessage($message);
+            $sentMessage = $this->messageApi->sendMessage($message);
 
             $text = 'Admin link sent to private chat!';
-        } catch (\Throwable $exception) {
+        } catch (\Throwable) {
             $sentMessage = false;
-            $text = 'Failed to generate link. Try again later. ' . $exception->getMessage();
+            $text = 'Failed to generate link. Try again later.';
         }
 
         if ($sentMessage && $sentMessage->message_id) {
-            $this->telegramApiService->deleteMessage((int) $command->chat->chatId, (int) $command->update->message->message_id);
+            $this->messageApi->deleteMessage((int) $command->chat->chatId, (int) $command->update->message->message_id);
         }
 
         return $text;

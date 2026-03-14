@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Application\MessageHandler;
 
 use App\Application\Message\TelegramUpdateMessage;
-use App\Domain\Telegram\Service\HistoryService;
+use App\Domain\Telegram\Service\HistoryServiceInterface;
 use App\Domain\Telegram\ValueObject\TelegramUpdate;
 use App\Infrastructure\Telegram\Dispatcher\Dispatcher;
 use Psr\Log\LoggerInterface;
@@ -14,13 +14,13 @@ use Symfony\Component\Serializer\SerializerInterface;
 use Throwable;
 
 #[AsMessageHandler]
-final class TelegramUpdateMessageHandler
+final readonly class TelegramUpdateMessageHandler
 {
     public function __construct(
-        private readonly SerializerInterface $serializer,
-        private readonly Dispatcher $dispatcher,
-        private readonly HistoryService $historyService,
-        private readonly LoggerInterface $logger
+        private SerializerInterface $serializer,
+        private Dispatcher $dispatcher,
+        private HistoryServiceInterface $historyService,
+        private LoggerInterface $logger
     ) {
     }
 

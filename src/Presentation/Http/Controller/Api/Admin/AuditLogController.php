@@ -13,15 +13,15 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
-class AuditLogController extends AbstractAdminController
+final class AuditLogController extends AbstractAdminController
 {
     public function __construct(
         protected AdminActionLogService $logService,
-        protected UserRepository $userRepository,
-        protected ChatRepository $chatRepository,
+        UserRepository $userRepository,
+        ChatRepository $chatRepository,
         AdminSessionService $sessionService,
     ) {
-        parent::__construct($sessionService);
+        parent::__construct($sessionService, $userRepository, $chatRepository);
     }
 
     public function chatLogsAction(
@@ -65,8 +65,16 @@ class AuditLogController extends AbstractAdminController
         return $response;
     }
 
-    public function userLogsAction(int $userId, Request $request): JsonResponse
-    {
+    public function userLogsAction(
+        int $userId,
+        Request $request,
+        #[CurrentUser]
+        AdminSessionEntity $session,
+    ): JsonResponse {
+        if ($session->userId !== $userId) {
+            return $this->json(['error' => 'Access denied'], 403);
+        }
+
         $limit = (int) ($request->query->get('limit') ?? '50');
         $limit = min($limit, 500);
 

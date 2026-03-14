@@ -11,18 +11,18 @@ use App\Domain\Telegram\Constants\Messages;
 use App\Domain\Telegram\Enum\VoteType;
 use App\Domain\Telegram\Repository\BanRepository;
 use App\Domain\Telegram\Repository\VoteRepository;
-use App\Domain\Telegram\Service\BanService;
+use App\Domain\Telegram\Service\BanProcessServiceInterface;
 use App\Domain\Telegram\Service\ChatConfigServiceInterface;
-use App\Domain\Telegram\Service\VoteService;
+use App\Infrastructure\Telegram\Attribute\AsTelegramHandler;
 
-class VoteByReactionHandler implements TelegramHandlerInterface
+#[AsTelegramHandler(VoteByReactionCommand::class)]
+final readonly class VoteByReactionHandler implements TelegramHandlerInterface
 {
     public function __construct(
-        private readonly BanRepository $banRepository,
-        private readonly VoteRepository $voteRepository,
-        private readonly VoteService $voteService,
-        private readonly BanService $banService,
-        private readonly ChatConfigServiceInterface $chatConfigService,
+        private BanRepository $banRepository,
+        private VoteRepository $voteRepository,
+        private BanProcessServiceInterface $banProcessService,
+        private ChatConfigServiceInterface $chatConfigService,
     ) {
     }
 
@@ -59,11 +59,7 @@ class VoteByReactionHandler implements TelegramHandlerInterface
             $vote = $this->voteRepository->findByUserAndBan($command->user, $ban);
             if ($vote) {
                 $this->voteRepository->delete($vote);
-
-                $voteResult = $this->voteService->getVoteResult($command->chat, $ban);
-                if ($voteResult['shouldForgive']) {
-                    $this->banService->forgiveBan($ban);
-                }
+                $this->banProcessService->checkAndExecuteVerdict($command->chat, $ban);
             }
 
             return Messages::MESSAGE_BAN_PROCESSED;
@@ -79,17 +75,7 @@ class VoteByReactionHandler implements TelegramHandlerInterface
             return Messages::MESSAGE_NOT_SUPPORTED;
         }
 
-        $this->voteService->vote($command->chat, $command->user, $ban, $voteType);
-
-        $voteResult = $this->voteService->getVoteResult($command->chat, $ban);
-
-        if ($voteResult['shouldBan']) {
-            $this->banService->banUser($command->chat, $ban);
-        }
-
-        if ($voteResult['shouldForgive']) {
-            $this->banService->forgiveBan($ban);
-        }
+        $this->banProcessService->processVote($command->chat, $command->user, $ban, $voteType);
 
         return Messages::MESSAGE_BAN_PROCESSED;
     }

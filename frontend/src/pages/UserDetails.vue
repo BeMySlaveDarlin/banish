@@ -1,32 +1,47 @@
 <template>
   <div class="user-details-container">
-    <h1>User Details</h1>
+    <PageHeader
+      title="User Details"
+      show-back
+      back-title="Go back to users list"
+      @back="goBack"
+    />
 
-    <div v-if="loading" class="loading-state">
-      <div class="spinner"></div>
-    </div>
+    <ErrorAlert :message="usersStore.error" @dismiss="usersStore.clearError()" />
 
-    <div v-else-if="user" class="details-grid">
+    <LoadingSpinner v-if="usersStore.loading" />
+
+    <ConfirmDialog
+      :visible="showConfirmUnban"
+      title="Confirm Unban"
+      message="Are you sure you want to unban this user?"
+      confirm-text="Unban"
+      confirm-variant="success"
+      @confirm="performUnban"
+      @cancel="showConfirmUnban = false"
+    />
+
+    <div v-if="usersStore.userDetails" class="details-grid">
       <div class="card">
         <div class="card-header">User Info</div>
         <div class="card-body">
-          <p><strong>ID:</strong> {{ user.id }}</p>
-          <p><strong>Username:</strong> {{ user.username || 'N/A' }}</p>
-          <p><strong>Name:</strong> {{ user.name || 'N/A' }}</p>
-          <p><strong>Messages:</strong> {{ user.messagesCount }}</p>
-          <p><strong>Trusted Count:</strong> {{ user.trustedCount }}</p>
-          <p v-if="user.isAdmin" class="badge badge-primary">Admin</p>
-          <p v-if="user.isBot" class="badge badge-secondary">Bot</p>
+          <p><strong>ID:</strong> {{ usersStore.userDetails.id }}</p>
+          <p><strong>Username:</strong> {{ usersStore.userDetails.username || 'N/A' }}</p>
+          <p><strong>Name:</strong> {{ usersStore.userDetails.name || 'N/A' }}</p>
+          <p><strong>Messages:</strong> {{ usersStore.userDetails.messagesCount }}</p>
+          <p><strong>Trusted Count:</strong> {{ usersStore.userDetails.trustedCount }}</p>
+          <p v-if="usersStore.userDetails.isAdmin" class="badge badge-primary">Admin</p>
+          <p v-if="usersStore.userDetails.isBot" class="badge badge-secondary">Bot</p>
         </div>
       </div>
 
       <div class="card">
         <div class="card-header">Ban History</div>
         <div class="card-body">
-          <p v-if="user.bans.length === 0">No bans</p>
+          <p v-if="usersStore.userDetails.bans.length === 0">No bans</p>
           <div v-else class="bans-list">
-            <div v-for="ban in user.bans" :key="ban.id" class="ban-item">
-              <span class="badge" :class="'badge-' + getBanStatus(ban.status)">{{ ban.status }}</span>
+            <div v-for="ban in usersStore.userDetails.bans" :key="ban.id" class="ban-item">
+              <span class="badge" :class="'badge-' + getBanStatusClass(ban.status)">{{ ban.status }}</span>
               <span class="text-muted">{{ formatDate(ban.createdAt) }}</span>
               <span>Votes: {{ ban.votesFor }}/{{ ban.votesAgainst }}</span>
             </div>
@@ -34,55 +49,65 @@
         </div>
       </div>
 
-      <div v-if="user.isBanned" class="card full-width">
-        <button class="btn btn-success" @click="unban">Unban User</button>
+      <div v-if="usersStore.userDetails.isBanned" class="card full-width">
+        <button class="btn btn-success" @click="showConfirmUnban = true">Unban User</button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import {onMounted, ref} from 'vue'
-import {useRoute} from 'vue-router'
-import api from '@/utils/api'
+import { ref, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useUsersStore } from '@/stores/users'
+import { formatDate, getBanStatusClass } from '@/utils/formatters'
+import PageHeader from '@/components/PageHeader.vue'
+import LoadingSpinner from '@/components/LoadingSpinner.vue'
+import ErrorAlert from '@/components/ErrorAlert.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
 const route = useRoute()
-const chatId = route.params.chatId
-const userId = route.params.userId
-const user = ref(null)
-const loading = ref(false)
+const router = useRouter()
+const usersStore = useUsersStore()
+
+const showConfirmUnban = ref(false)
+
+const chatId = computed(() => route.params.chatId)
+const userId = computed(() => route.params.userId)
 
 const loadUser = async () => {
-  loading.value = true
   try {
-    const response = await api.get(`/api/admin/chat/${chatId}/users/${userId}`)
-    user.value = response.data
-  } catch (error) {
-    console.error('Failed to load user:', error)
-  } finally {
-    loading.value = false
+    await usersStore.fetchUserDetails(chatId.value, userId.value)
+  } catch {
+    // error handled in store
   }
 }
 
-const unban = async () => {
-  if (!confirm('Unban this user?')) return
+const performUnban = async () => {
+  showConfirmUnban.value = false
   try {
-    await api.post(`/api/admin/chat/${chatId}/users/${userId}/unban`)
+    await usersStore.unbanUser(chatId.value, userId.value)
     await loadUser()
-  } catch (error) {
-    alert('Failed to unban: ' + error.message)
+  } catch {
+    // error handled in store
   }
 }
 
-const formatDate = (dateString) => new Date(dateString).toLocaleDateString()
-const getBanStatus = (status) => status === 'active' ? 'danger' : 'secondary'
+const goBack = () => {
+  router.push(`/chat/${chatId.value}/users`)
+}
 
-onMounted(() => loadUser())
+watch(
+  () => [route.params.chatId, route.params.userId],
+  () => loadUser(),
+  { immediate: true },
+)
 </script>
 
 <style scoped>
-.user-details-container h1 {
-  margin-bottom: 20px;
+.user-details-container {
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .details-grid {
@@ -91,22 +116,8 @@ onMounted(() => loadUser())
   gap: 20px;
 }
 
-.card {
-  background: white;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
 .card.full-width {
   grid-column: 1 / -1;
-}
-
-.card-header {
-  font-weight: 700;
-  margin-bottom: 15px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #e9ecef;
 }
 
 .card-body p {

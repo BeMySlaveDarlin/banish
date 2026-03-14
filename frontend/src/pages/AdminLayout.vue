@@ -6,27 +6,52 @@
       </div>
       <ul class="nav-menu">
         <li>
-          <router-link to="/chats" class="nav-link" :class="{ active: isActive('/chats') }" @click="closeMenuOnNavigation">
+          <router-link
+            to="/chats"
+            class="nav-link"
+            :class="{ active: isActive('/chats') }"
+            @click="closeMenuOnNavigation"
+          >
             Chats
           </router-link>
         </li>
         <li v-if="currentChatId">
-          <router-link :to="`/chat/${currentChatId}`" class="nav-link" :class="{ active: isActive(`/chat/${currentChatId}`) }" @click="closeMenuOnNavigation">
+          <router-link
+            :to="`/chat/${currentChatId}`"
+            class="nav-link"
+            :class="{ active: isActive(`/chat/${currentChatId}`) }"
+            @click="closeMenuOnNavigation"
+          >
             &nbsp;&nbsp;• Info
           </router-link>
         </li>
         <li v-if="currentChatId">
-          <router-link :to="`/chat/${currentChatId}/users`" class="nav-link" :class="{ active: isActive(`/chat/${currentChatId}/users`) }" @click="closeMenuOnNavigation">
+          <router-link
+            :to="`/chat/${currentChatId}/users`"
+            class="nav-link"
+            :class="{ active: isActive(`/chat/${currentChatId}/users`) }"
+            @click="closeMenuOnNavigation"
+          >
             &nbsp;&nbsp;• Users
           </router-link>
         </li>
         <li v-if="currentChatId">
-          <router-link :to="`/chat/${currentChatId}/config`" class="nav-link" :class="{ active: isActive(`/chat/${currentChatId}/config`) }" @click="closeMenuOnNavigation">
+          <router-link
+            :to="`/chat/${currentChatId}/config`"
+            class="nav-link"
+            :class="{ active: isActive(`/chat/${currentChatId}/config`) }"
+            @click="closeMenuOnNavigation"
+          >
             &nbsp;&nbsp;• Config
           </router-link>
         </li>
         <li v-if="currentChatId">
-          <router-link :to="`/chat/${currentChatId}/logs`" class="nav-link" :class="{ active: isActive(`/chat/${currentChatId}/logs`) }" @click="closeMenuOnNavigation">
+          <router-link
+            :to="`/chat/${currentChatId}/logs`"
+            class="nav-link"
+            :class="{ active: isActive(`/chat/${currentChatId}/logs`) }"
+            @click="closeMenuOnNavigation"
+          >
             &nbsp;&nbsp;• Logs
           </router-link>
         </li>
@@ -38,29 +63,27 @@
             <div class="profile-id">#{{ user.userId }}</div>
           </div>
         </div>
-        <button class="btn btn-danger" @click="logout">Logout</button>
+        <button class="btn btn-danger" @click="handleLogout">Logout</button>
       </div>
     </nav>
     <main class="main-content">
       <header class="top-bar">
         <div class="logo-section">
-          <img src="@/img/logo.webp" alt="Banish Admin" class="logo">
+          <img src="@/img/logo.webp" alt="Banish Admin" class="logo" />
         </div>
-        <button class="mobile-menu-toggle" @click="toggleMobileMenu">☰</button>
+        <button class="mobile-menu-toggle" @click="toggleMobileMenu">&#9776;</button>
       </header>
       <div class="content">
-        <router-view/>
+        <router-view />
       </div>
     </main>
   </div>
 </template>
 
 <script setup>
-import {computed, onMounted, ref} from 'vue'
-import {useRoute, useRouter} from 'vue-router'
-import {useAuthStore} from '@/stores/auth'
-
-console.log('🏗️ AdminLayout.vue script setup executed')
+import { computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const route = useRoute()
@@ -70,36 +93,22 @@ const mobileMenuOpen = ref(false)
 const user = computed(() => authStore.user)
 const currentChatId = computed(() => route.params.chatId)
 
-console.log('👤 User:', user.value)
-
 const isActive = (path) => {
   return route.path === path
 }
 
 const toggleMobileMenu = () => {
-  console.log('📱 Toggle mobile menu, now:', !mobileMenuOpen.value)
   mobileMenuOpen.value = !mobileMenuOpen.value
 }
 
-// Закрыть меню при клике на навигацию
 const closeMenuOnNavigation = () => {
   mobileMenuOpen.value = false
 }
 
-const logout = async () => {
-  console.log('🚪 Logging out...')
-  try {
-    await authStore.logout()
-    console.log('✅ Logged out successfully')
-    router.push('/')
-  } catch (err) {
-    console.error('❌ Logout failed:', err)
-  }
+const handleLogout = async () => {
+  await authStore.logout()
+  router.push('/auth/expired')
 }
-
-onMounted(() => {
-  console.log('📌 AdminLayout.vue mounted')
-})
 </script>
 
 <style scoped>
@@ -230,7 +239,6 @@ onMounted(() => {
   overflow-y: auto;
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
   .sidebar {
     transform: translateX(-100%);

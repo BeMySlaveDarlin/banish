@@ -1,4 +1,4 @@
-# Production environment override
+# Development environment override
 services:
   app:
     build:
@@ -23,9 +23,6 @@ services:
   nginx:
     build:
       context: ./docker/nginx
-      args:
-        UID: ${UID}
-        GID: ${GID}
 
   frontend:
     build:
@@ -33,5 +30,4 @@ services:
       dockerfile: ./docker/node/Dockerfile
       target: node_dev
       args:
-        - VITE_API_URL=${VITE_API_URL}
-    ports: []
+        VITE_API_URL: ${VITE_API_URL}

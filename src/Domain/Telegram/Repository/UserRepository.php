@@ -11,7 +11,7 @@ use Doctrine\Persistence\ManagerRegistry;
 /**
  * @extends ServiceEntityRepository<TelegramChatUserEntity>
  */
-class UserRepository extends ServiceEntityRepository
+final class UserRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
@@ -43,6 +43,11 @@ class UserRepository extends ServiceEntityRepository
             ->setParameter('username', $name)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    public function clear(): void
+    {
+        $this->getEntityManager()->clear();
     }
 
     public function save(TelegramChatUserEntity $user, bool $flush = true): void
@@ -87,6 +92,33 @@ class UserRepository extends ServiceEntityRepository
             ->setParameter('chatId', $chatId)
             ->getQuery()
             ->getSingleScalarResult();
+    }
+
+    /**
+     * @param array<int, int> $chatIds
+     * @return array<int, int>
+     */
+    public function countByChatsBatch(array $chatIds): array
+    {
+        if (empty($chatIds)) {
+            return [];
+        }
+
+        $rows = $this
+            ->createQueryBuilder('u')
+            ->select('u.chatId', 'COUNT(u.id) AS membersCount')
+            ->where('u.chatId IN (:chatIds)')
+            ->setParameter('chatIds', $chatIds)
+            ->groupBy('u.chatId')
+            ->getQuery()
+            ->getResult();
+
+        $result = [];
+        foreach ($rows as $row) {
+            $result[(int) $row['chatId']] = (int) $row['membersCount'];
+        }
+
+        return $result;
     }
 
     /**

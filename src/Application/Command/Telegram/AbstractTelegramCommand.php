@@ -4,16 +4,17 @@ declare(strict_types=1);
 
 namespace App\Application\Command\Telegram;
 
+use App\Domain\Telegram\Command\TelegramCommandInterface;
 use App\Domain\Telegram\Entity\TelegramChatEntity;
 use App\Domain\Telegram\Entity\TelegramChatUserEntity;
 use App\Domain\Telegram\ValueObject\TelegramUpdate;
 
-abstract class AbstractTelegramCommand
+abstract class AbstractTelegramCommand implements TelegramCommandInterface
 {
     public function __construct(
-        public TelegramUpdate $update,
-        public TelegramChatEntity $chat,
-        public TelegramChatUserEntity $user,
+        public readonly TelegramUpdate $update,
+        public readonly TelegramChatEntity $chat,
+        public readonly TelegramChatUserEntity $user,
     ) {
     }
 

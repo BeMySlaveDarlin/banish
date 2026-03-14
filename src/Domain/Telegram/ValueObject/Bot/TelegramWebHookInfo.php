@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Telegram\ValueObject\Bot;
 
-class TelegramWebHookInfo
+final class TelegramWebHookInfo
 {
     public ?string $url = null;
     public ?string $ip_address = null;

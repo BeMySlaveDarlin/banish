@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Telegram\ValueObject;
 
-class TelegramUpdate
+final class TelegramUpdate
 {
     public int $update_id;
     public ?TelegramMessage $message = null;

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Application\Command\Telegram;
 
-use App\Domain\Telegram\Command\TelegramCommandInterface;
+use App\Infrastructure\Telegram\Attribute\AsTelegramCommand;
 
-class HelpCommand extends AbstractTelegramCommand implements TelegramCommandInterface
+#[AsTelegramCommand('/help')]
+#[AsTelegramCommand('/start')]
+final class HelpCommand extends AbstractTelegramCommand
 {
 }

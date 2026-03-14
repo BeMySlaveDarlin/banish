@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace App\Domain\Telegram\ValueObject\Bot;
 
-use AllowDynamicProperties;
-
-#[AllowDynamicProperties]
-class TelegramSendMessage
+final class TelegramSendMessage
 {
+    public ?string $parse_mode = null;
+
     /**
      * @param TelegramReplyMarkup|array<int, array<string, string>> $reply_markup
      */

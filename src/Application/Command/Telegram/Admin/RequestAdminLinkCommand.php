@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace App\Application\Command\Telegram\Admin;
 
 use App\Application\Command\Telegram\AbstractTelegramCommand;
-use App\Domain\Telegram\Command\TelegramCommandInterface;
+use App\Infrastructure\Telegram\Attribute\AsTelegramCommand;
 
-class RequestAdminLinkCommand extends AbstractTelegramCommand implements TelegramCommandInterface
+#[AsTelegramCommand('/admin')]
+final class RequestAdminLinkCommand extends AbstractTelegramCommand
 {
 }

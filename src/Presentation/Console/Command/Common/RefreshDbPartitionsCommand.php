@@ -14,7 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
     name: 'app:common:refresh-db-partitions',
     description: 'Refresh DB Partitions',
 )]
-class RefreshDbPartitionsCommand extends Command
+final class RefreshDbPartitionsCommand extends Command
 {
     public function __construct(
         private readonly PartitionService $partitionService,

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Telegram\ValueObject;
 
-class TelegramDeletedMessage
+final class TelegramDeletedMessage
 {
     public TelegramMessageChat $chat;
     public int $message_id = 0;

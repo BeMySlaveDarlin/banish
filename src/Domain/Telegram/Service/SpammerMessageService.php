@@ -7,16 +7,18 @@ namespace App\Domain\Telegram\Service;
 use App\Domain\Telegram\Repository\RequestHistoryRepository;
 use App\Domain\Telegram\Repository\UserRepository;
 use App\Domain\Telegram\ValueObject\TelegramMessage;
+use App\Domain\Telegram\ValueObject\TelegramMessageChat;
+use App\Domain\Telegram\ValueObject\TelegramMessageFrom;
 use App\Domain\Telegram\ValueObject\TelegramUpdate;
-use Symfony\Component\Serializer\SerializerInterface;
 
-class SpammerMessageService
+final readonly class SpammerMessageService implements SpammerMessageServiceInterface
 {
+    private const int PREVIOUS_MESSAGE_MAX_AGE_SECONDS = 30;
+
     public function __construct(
-        private readonly UserRepository $userRepository,
-        private readonly RequestHistoryRepository $requestHistoryRepository,
-        private readonly SerializerInterface $serializer,
-        private readonly string $botName
+        private UserRepository $userRepository,
+        private RequestHistoryRepository $requestHistoryRepository,
+        private string $botName
     ) {
     }
 
@@ -70,23 +72,23 @@ class SpammerMessageService
             return null;
         }
 
-        $messageData = [
-            'message_id' => null,
-            'from' => [
-                'id' => $user->userId,
-                'is_bot' => $user->isBot,
-                'first_name' => $user->name,
-                'username' => $user->username,
-            ],
-            'chat' => [
-                'id' => $chatId,
-                'type' => $update->getChat()->type,
-            ],
-            'date' => time(),
-            'text' => '',
-        ];
+        $from = new TelegramMessageFrom();
+        $from->id = $user->userId;
+        $from->is_bot = $user->isBot;
+        $from->first_name = $user->name ?? '';
+        $from->username = $user->username;
 
-        return $this->serializer->deserialize(json_encode($messageData, JSON_THROW_ON_ERROR), TelegramMessage::class, 'json');
+        $chat = new TelegramMessageChat();
+        $chat->id = $chatId;
+        $chat->type = $update->getChat()->type;
+
+        $message = new TelegramMessage();
+        $message->from = $from;
+        $message->chat = $chat;
+        $message->date = time();
+        $message->text = '';
+
+        return $message;
     }
 
     private function getPreviousMessage(TelegramUpdate $update): ?TelegramMessage
@@ -109,13 +111,36 @@ class SpammerMessageService
             return null;
         }
 
-        $requestData = $history->request?->toArray() ?? [];
-        $messageData = $requestData['message'] ?? null;
-
-        if (!$messageData) {
+        $maxAge = new \DateTimeImmutable('-' . self::PREVIOUS_MESSAGE_MAX_AGE_SECONDS . ' seconds');
+        if ($history->createdAt < $maxAge) {
             return null;
         }
 
-        return $this->serializer->deserialize(json_encode($messageData, JSON_THROW_ON_ERROR), TelegramMessage::class, 'json');
+        $requestData = $history->request?->toArray() ?? [];
+        $messageData = $requestData['message'] ?? null;
+
+        if (!$messageData || !is_array($messageData)) {
+            return null;
+        }
+
+        $from = new TelegramMessageFrom();
+        $from->id = isset($messageData['from']['id']) ? (int) $messageData['from']['id'] : null;
+        $from->is_bot = (bool) ($messageData['from']['is_bot'] ?? false);
+        $from->first_name = $messageData['from']['first_name'] ?? null;
+        $from->last_name = $messageData['from']['last_name'] ?? null;
+        $from->username = $messageData['from']['username'] ?? null;
+
+        $chat = new TelegramMessageChat();
+        $chat->id = isset($messageData['chat']['id']) ? (int) $messageData['chat']['id'] : null;
+        $chat->type = $messageData['chat']['type'] ?? null;
+
+        $message = new TelegramMessage();
+        $message->message_id = isset($messageData['message_id']) ? (int) $messageData['message_id'] : null;
+        $message->from = $from;
+        $message->chat = $chat;
+        $message->date = (int) ($messageData['date'] ?? 0);
+        $message->text = $messageData['text'] ?? null;
+
+        return $message;
     }
 }

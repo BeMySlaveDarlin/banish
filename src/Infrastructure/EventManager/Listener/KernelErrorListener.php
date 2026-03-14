@@ -6,13 +6,16 @@ namespace App\Infrastructure\EventManager\Listener;
 
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 #[AsEventListener(event: ExceptionEvent::class, method: 'onKernelException')]
-class KernelErrorListener
+final class KernelErrorListener
 {
+    private const string TELEGRAM_WEBHOOK_PREFIX = '/api/telegram/';
+
     public function __construct(
         private readonly LoggerInterface $logger
     ) {
@@ -21,23 +24,39 @@ class KernelErrorListener
     public function onKernelException(ExceptionEvent $event): void
     {
         $throwable = $event->getThrowable();
-        $code = $throwable instanceof HttpExceptionInterface ? $throwable->getStatusCode() : Response::HTTP_INTERNAL_SERVER_ERROR;
+        $request = $event->getRequest();
+        $pathInfo = $request->getPathInfo();
+        $isTelegramWebhook = str_starts_with($pathInfo, self::TELEGRAM_WEBHOOK_PREFIX);
 
-        $params = [
+        $code = $throwable instanceof HttpExceptionInterface
+            ? $throwable->getStatusCode()
+            : Response::HTTP_INTERNAL_SERVER_ERROR;
+
+        $logContext = [
             'error' => true,
             'message' => $throwable->getMessage(),
-            'request' => $event->getRequest()->toArray(),
+            'path' => $pathInfo,
+            'method' => $request->getMethod(),
         ];
+
         if (!isset($_ENV['APP_ENV']) || $_ENV['APP_ENV'] !== 'prod') {
-            $params['error_code'] = $code;
-            $params['error_trace'] = $throwable->getTrace();
+            $logContext['error_code'] = $code;
+            $logContext['error_trace'] = $throwable->getTrace();
         }
 
-        $this->logger->warning('onKernelException', $params);
-
-        $response = new Response('OK', Response::HTTP_OK);
+        $this->logger->warning('onKernelException', $logContext);
 
         $event->allowCustomResponseCode();
-        $event->setResponse($response);
+
+        if ($isTelegramWebhook) {
+            $event->setResponse(new Response('OK', Response::HTTP_OK));
+
+            return;
+        }
+
+        $event->setResponse(new JsonResponse(
+            ['error' => true, 'message' => $throwable->getMessage()],
+            $code
+        ));
     }
 }

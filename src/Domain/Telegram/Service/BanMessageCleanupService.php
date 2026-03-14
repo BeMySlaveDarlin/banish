@@ -13,28 +13,31 @@ use DateTimeImmutable;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
-class BanMessageCleanupService
+final readonly class BanMessageCleanupService implements BanMessageCleanupServiceInterface
 {
+    private const int BATCH_SIZE = 100;
+    private const int FINISHED_BANS_DAYS = 7;
+
     public function __construct(
-        private readonly BanRepository $banRepository,
-        private readonly TelegramApiService $telegramApiService,
-        private readonly LoggerInterface $logger
+        private BanRepository $banRepository,
+        private TelegramMessageApiInterface $messageApi,
+        private LoggerInterface $logger
     ) {
     }
 
     public function clearBotMessages(): void
     {
         $finishedBans = $this->getFinishedBans();
-        $this->clearBans($finishedBans);
+        $this->clearBans($finishedBans, useCleanup: true);
 
         $oldPendingBans = $this->getOldPendingBans();
-        $this->clearBans($oldPendingBans);
+        $this->clearBans($oldPendingBans, useCleanup: false);
     }
 
     /**
      * @param array<int, TelegramChatUserBanEntity> $bans
      */
-    private function clearBans(array $bans): void
+    private function clearBans(array $bans, bool $useCleanup): void
     {
         foreach ($bans as $ban) {
             try {
@@ -42,19 +45,17 @@ class BanMessageCleanupService
                 $initialMessageDeleted = true;
 
                 if ($ban->banMessageId > 0) {
-                    $banMessageDeleted = $this->telegramApiService->deleteMessage((int) $ban->chatId, (int) $ban->banMessageId);
+                    $banMessageDeleted = $this->messageApi->deleteMessage((int) $ban->chatId, (int) $ban->banMessageId);
                 }
 
                 if ($ban->initialMessageId !== null) {
-                    $initialMessageDeleted = $this->telegramApiService->deleteMessage((int) $ban->chatId, (int) $ban->initialMessageId);
+                    $initialMessageDeleted = $this->messageApi->deleteMessage((int) $ban->chatId, (int) $ban->initialMessageId);
                 }
 
                 if ($banMessageDeleted && $initialMessageDeleted) {
                     $this->logger->info('Ban messages deleted successfully', [
                         'banId' => $ban->id,
                         'chatId' => $ban->chatId,
-                        'banMessageId' => $ban->banMessageId,
-                        'initialMessageId' => $ban->initialMessageId,
                     ]);
                 } else {
                     $this->logger->warning('Some ban messages failed to delete', [
@@ -65,14 +66,17 @@ class BanMessageCleanupService
                     ]);
                 }
 
-                $ban->status = BanStatus::DELETED;
+                if ($useCleanup) {
+                    $ban->markAsCleanedUp();
+                } else {
+                    $ban->markAsExpired();
+                }
                 $this->banRepository->save($ban, flush: false);
             } catch (Throwable $e) {
                 $this->logger->error('Error clearing ban messages', [
                     'error' => $e->getMessage(),
                     'banId' => $ban->id,
                     'chatId' => $ban->chatId,
-                    'trace' => $e->getTraceAsString(),
                 ]);
             }
         }
@@ -84,9 +88,17 @@ class BanMessageCleanupService
      */
     private function getFinishedBans(): array
     {
-        return $this->banRepository->findBy([
-            'status' => [BanStatus::CANCELED, BanStatus::BANNED],
-        ]);
+        $since = (new DateTimeImmutable())->sub(new DateInterval('P' . self::FINISHED_BANS_DAYS . 'D'));
+
+        return $this->banRepository
+            ->createQueryBuilder('b')
+            ->where('b.status IN (:statuses)')
+            ->andWhere('b.createdAt >= :since')
+            ->setParameter('statuses', [BanStatus::CANCELED, BanStatus::BANNED])
+            ->setParameter('since', $since)
+            ->setMaxResults(self::BATCH_SIZE)
+            ->getQuery()
+            ->getResult();
     }
 
     /**

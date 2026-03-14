@@ -14,7 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
     name: 'app:telegram:clear-updates',
     description: 'Clear Telegram Updates',
 )]
-class ClearUpdatesCommand extends Command
+final class ClearUpdatesCommand extends Command
 {
     public function __construct(
         private readonly TelegramWebhookService $webhookService,

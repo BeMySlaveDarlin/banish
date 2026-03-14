@@ -2,9 +2,11 @@
   <div class="login-container">
     <div class="login-card">
       <div class="login-header">
-        <img src="@/img/logo.webp" alt="Banish Admin" class="login-logo">
+        <img src="@/img/logo.webp" alt="Banish Admin" class="login-logo" />
         <p>Authenticate with Telegram</p>
       </div>
+
+      <ErrorAlert :message="error" :dismissible="false" />
 
       <div v-if="message" :class="['alert', 'alert-' + messageType]">
         {{ message }}
@@ -15,9 +17,13 @@
         <p>Authenticating...</p>
       </div>
 
+      <div v-else-if="noToken" class="login-content">
+        <p class="description">Session expired or not authenticated. Use a login link from the Telegram bot.</p>
+      </div>
+
       <div v-else class="login-content">
         <p class="description">You're being authenticated with token from Telegram link. Please wait...</p>
-        <button class="btn btn-primary" @click="authenticate" :disabled="isAuthenticating">
+        <button class="btn btn-primary" :disabled="isAuthenticating" @click="authenticate">
           Confirm Authentication
         </button>
       </div>
@@ -29,8 +35,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-
-console.log('🔐 AdminLogin.vue script setup executed')
+import ErrorAlert from '@/components/ErrorAlert.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -40,53 +45,41 @@ const loading = ref(false)
 const isAuthenticating = ref(false)
 const message = ref('')
 const messageType = ref('info')
+const error = ref('')
+const noToken = ref(false)
 
 const authenticate = async () => {
-  console.log('🔑 Starting authentication...')
   isAuthenticating.value = true
+  error.value = ''
   const token = route.params.token
-
-  console.log('📝 Token provided:', !!token)
 
   try {
     const success = await authStore.login(token)
-    console.log('📊 Login result:', success)
 
     if (success) {
-      console.log('✅ Authentication successful')
       message.value = 'Authenticated successfully! Redirecting...'
       messageType.value = 'success'
       setTimeout(() => {
-        console.log('🔀 Redirecting to /chats')
         router.push('/chats')
       }, 1500)
     } else {
-      console.error('❌ Authentication failed')
-      message.value = 'Authentication failed. Invalid or expired token.'
-      messageType.value = 'danger'
-      isAuthenticating.value = false
+      error.value = 'Authentication failed. Invalid or expired token.'
     }
   } catch (err) {
-    console.error('❌ Authentication error:', err)
-    message.value = 'Authentication error: ' + err.message
-    messageType.value = 'danger'
+    error.value = 'Authentication error: ' + err.message
+  } finally {
+    loading.value = false
     isAuthenticating.value = false
   }
 }
 
 onMounted(() => {
-  console.log('📌 AdminLogin.vue mounted')
   const token = route.params.token
-  console.log('🔍 Token in route:', !!token)
-
-  if (token) {
-    console.log('⏳ Starting auto-authentication')
+  if (token && token !== 'expired' && token !== 'invalid') {
     loading.value = true
     authenticate()
   } else {
-    console.warn('⚠️ No token in route')
-    message.value = 'No authentication token provided'
-    messageType.value = 'danger'
+    noToken.value = true
   }
 })
 </script>

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Telegram\ValueObject;
 
-class TelegramCallbackQuery
+final class TelegramCallbackQuery
 {
     public ?string $id = null;
     public ?TelegramMessageFrom $from = null;

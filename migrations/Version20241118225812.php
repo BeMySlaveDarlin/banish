@@ -22,6 +22,6 @@ final class Version20241118225812 extends AbstractMigration
     public function down(Schema $schema): void
     {
         $this->addSql("DROP INDEX IF EXISTS idx_telegram_chats_users_bans_initial_message_id");
-        $this->addSql("ALTER TABLE ublic.telegram_chats_users_bans DROP COLUMN initial_message_id;");
+        $this->addSql("ALTER TABLE public.telegram_chats_users_bans DROP COLUMN initial_message_id;");
     }
 }

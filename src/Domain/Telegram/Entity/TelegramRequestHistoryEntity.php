@@ -1,10 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Telegram\Entity;
 
 use App\Domain\Telegram\Repository\RequestHistoryRepository;
-use App\Infrastructure\Doctrine\Type\JsonBType;
-use App\Infrastructure\Doctrine\Type\JsonBValue;
+use App\Domain\Common\ValueObject\JsonBValue;
 use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping\Column;
@@ -45,10 +46,10 @@ class TelegramRequestHistoryEntity
     #[Column(name: 'update_id', type: Types::BIGINT, length: 255)]
     public int $updateId;
 
-    #[Column(type: JsonBType::NAME, nullable: true)]
+    #[Column(type: 'jsonb', nullable: true)]
     public ?JsonBValue $request = null;
 
-    #[Column(type: JsonBType::NAME, nullable: true)]
+    #[Column(type: 'jsonb', nullable: true)]
     public ?JsonBValue $response = null;
 
     #[Column(name: 'created_at', type: Types::DATETIME_IMMUTABLE, options: ["default" => "CURRENT_TIMESTAMP"])]

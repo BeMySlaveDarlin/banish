@@ -1,12 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Telegram\Entity;
 
 use App\Domain\Telegram\Constants\ChatDefaults;
 use App\Domain\Telegram\Constants\Emoji;
 use App\Domain\Telegram\Repository\ChatRepository;
-use App\Infrastructure\Doctrine\Type\JsonBType;
-use App\Infrastructure\Doctrine\Type\JsonBValue;
+use App\Domain\Common\ValueObject\JsonBValue;
 use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping\Column;
@@ -46,7 +47,7 @@ class TelegramChatEntity
     #[Column(name: 'is_enabled', type: Types::BOOLEAN, options: ['default' => false])]
     public bool $isEnabled;
 
-    #[Column(type: JsonBType::NAME, nullable: true)]
+    #[Column(type: 'jsonb', nullable: true)]
     public ?JsonBValue $options = null;
 
     #[Column(name: 'created_at', type: Types::DATETIME_IMMUTABLE, options: ["default" => "CURRENT_TIMESTAMP"])]

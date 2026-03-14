@@ -9,29 +9,29 @@ use App\Domain\Telegram\Command\TelegramCommandInterface;
 use App\Domain\Telegram\Command\TelegramHandlerInterface;
 use App\Domain\Telegram\Constants\Messages;
 use App\Domain\Telegram\Entity\TelegramChatUserBanEntity;
-use App\Domain\Telegram\Entity\TelegramChatUserEntity;
 use App\Domain\Telegram\Enum\VoteType;
 use App\Domain\Telegram\Repository\BanRepository;
 use App\Domain\Telegram\Repository\UserRepository;
-use App\Domain\Telegram\Service\BanMessageFormatter;
-use App\Domain\Telegram\Service\BanService;
+use App\Domain\Telegram\Service\BanMessageFormatterInterface;
+use App\Domain\Telegram\Service\BanProcessServiceInterface;
 use App\Domain\Telegram\Service\ChatConfigServiceInterface;
-use App\Domain\Telegram\Service\TelegramApiService;
-use App\Domain\Telegram\Service\VoteService;
+use App\Domain\Telegram\Service\TelegramMessageApiInterface;
 use App\Domain\Telegram\ValueObject\Bot\TelegramEditMessage;
 use App\Domain\Telegram\ValueObject\Bot\TelegramInlineKeyboard;
 use App\Domain\Telegram\ValueObject\Bot\TelegramReplyMarkup;
+use App\Domain\Telegram\ValueObject\VoteResult;
+use App\Infrastructure\Telegram\Attribute\AsTelegramHandler;
 
-class VoteForBanHandler implements TelegramHandlerInterface
+#[AsTelegramHandler(VoteForBanCommand::class)]
+final readonly class VoteForBanHandler implements TelegramHandlerInterface
 {
     public function __construct(
-        private readonly BanRepository $banRepository,
-        private readonly ChatConfigServiceInterface $chatConfigService,
-        private readonly UserRepository $userRepository,
-        private readonly VoteService $voteService,
-        private readonly BanService $banService,
-        private readonly BanMessageFormatter $messageFormatter,
-        private readonly TelegramApiService $telegramApiService
+        private BanRepository $banRepository,
+        private ChatConfigServiceInterface $chatConfigService,
+        private UserRepository $userRepository,
+        private BanProcessServiceInterface $banProcessService,
+        private BanMessageFormatterInterface $messageFormatter,
+        private TelegramMessageApiInterface $messageApi
     ) {
     }
 
@@ -70,27 +70,19 @@ class VoteForBanHandler implements TelegramHandlerInterface
             return Messages::MESSAGE_BAN_404;
         }
 
-        $this->voteService->vote($command->chat, $command->user, $ban, VoteType::from($voteType));
-
-        $voteResult = $this->voteService->getVoteResult($command->chat, $ban);
-
-        if ($voteResult['shouldBan']) {
-            $this->banService->banUser($command->chat, $ban);
-        }
-
-        if ($voteResult['shouldForgive']) {
-            $this->banService->forgiveBan($ban);
-        }
+        $voteResult = $this->banProcessService->processVote(
+            $command->chat,
+            $command->user,
+            $ban,
+            VoteType::from($voteType)
+        );
 
         $this->updateBanMessage($command, $ban, $voteResult);
 
         return Messages::MESSAGE_BAN_PROCESSED;
     }
 
-    /**
-     * @param array<string, mixed> $voteResult
-     */
-    private function updateBanMessage(VoteForBanCommand $command, TelegramChatUserBanEntity $ban, array $voteResult): void
+    private function updateBanMessage(VoteForBanCommand $command, TelegramChatUserBanEntity $ban, VoteResult $voteResult): void
     {
         if ($command->chat === null) {
             return;
@@ -106,40 +98,32 @@ class VoteForBanHandler implements TelegramHandlerInterface
             $ban->spammerId
         );
 
-        /** @var array<int, TelegramChatUserEntity> $upVotes */
-        $upVotes = $voteResult['upVotes'] ?? [];
-        /** @var array<int, TelegramChatUserEntity> $downVotes */
-        $downVotes = $voteResult['downVotes'] ?? [];
-
         $deleteOnlyMessage = $this->chatConfigService->isDeleteOnlyEnabled($command->chat);
         $text = $this->messageFormatter->formatVoteMessage(
             $ban,
             $reporter,
             $spammer,
-            $upVotes,
-            $downVotes,
+            $voteResult->upVotes,
+            $voteResult->downVotes,
             $deleteOnlyMessage
         );
 
         $replyMarkup = new TelegramReplyMarkup();
-        $upCount = is_int($voteResult['upCount'] ?? null) ? $voteResult['upCount'] : 0;
-        $downCount = is_int($voteResult['downCount'] ?? null) ? $voteResult['downCount'] : 0;
-        $requiredVotes = is_int($voteResult['requiredVotes'] ?? null) ? $voteResult['requiredVotes'] : 0;
 
         if ($ban->isPending()) {
             $keyboard = new TelegramInlineKeyboard();
             $keyboard->addButton(
                 text: $this->messageFormatter->formatVoteButtonText(
-                    $upCount,
-                    $requiredVotes,
+                    $voteResult->upCount,
+                    $voteResult->requiredVotes,
                     VoteType::BAN
                 ),
                 callbackData: VoteType::BAN->value
             );
             $keyboard->addButton(
                 text: $this->messageFormatter->formatVoteButtonText(
-                    $downCount,
-                    $requiredVotes,
+                    $voteResult->downCount,
+                    $voteResult->requiredVotes,
                     VoteType::FORGIVE
                 ),
                 callbackData: VoteType::FORGIVE->value
@@ -154,6 +138,6 @@ class VoteForBanHandler implements TelegramHandlerInterface
             $replyMarkup
         );
 
-        $this->telegramApiService->editMessageText($editMessage);
+        $this->messageApi->editMessageText($editMessage);
     }
 }

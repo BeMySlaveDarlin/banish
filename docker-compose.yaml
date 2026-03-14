@@ -3,6 +3,7 @@ services:
     container_name: ${APP_NAME}.service.app
     restart: unless-stopped
     healthcheck:
+      test: ["CMD-SHELL", "pgrep php-fpm || exit 1"]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -11,7 +12,7 @@ services:
       - .env
     depends_on:
       database:
-        condition: service_started
+        condition: service_healthy
       memcached:
         condition: service_started
       rabbitmq:
@@ -83,6 +84,7 @@ services:
     container_name: ${APP_NAME}.service.supervisor
     restart: unless-stopped
     healthcheck:
+      test: ["CMD-SHELL", "supervisorctl status | grep -v FATAL || exit 1"]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -95,7 +97,6 @@ services:
     volumes:
       - .:/var/www/app
       - ./docker/php/supervisor/supervisord.conf:/etc/supervisor/supervisord.conf
-      - ./var/log/supervisor:/var/log/supervisor
     networks:
       - app_network
     logging:
@@ -106,7 +107,7 @@ services:
 
   memcached:
     container_name: ${APP_NAME}.service.memcached
-    image: memcached
+    image: memcached:1.6-alpine
     restart: unless-stopped
     ports:
       - ${MEMCACHED_PORTS}
@@ -117,6 +118,11 @@ services:
     container_name: ${APP_NAME}.service.db
     image: postgres:${POSTGRES_VERSION:-15}-alpine
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER} -d ${DATABASE_DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     environment:
       POSTGRES_DB: ${DATABASE_DB_NAME}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}

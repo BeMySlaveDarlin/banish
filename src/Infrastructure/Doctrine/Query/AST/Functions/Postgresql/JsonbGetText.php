@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Infrastructure\Doctrine\Query\AST\Functions\Postgresql;
 
 use Scienta\DoctrineJsonFunctions\Query\AST\Functions\Postgresql\PostgresqlJsonOperatorFunctionNode;

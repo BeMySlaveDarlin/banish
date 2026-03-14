@@ -11,11 +11,11 @@ use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpKernel\Event\TerminateEvent;
 
 #[AsEventListener(event: TerminateEvent::class, method: 'onTerminateApp')]
-class RequestListener
+final class RequestListener
 {
     public function __construct(
-        protected LoggerInterface $logger,
-        protected RequestMetricsFactory $metricsFactory
+        private readonly LoggerInterface $logger,
+        private readonly RequestMetricsFactory $metricsFactory
     ) {
     }
 
@@ -24,11 +24,6 @@ class RequestListener
         $request = $event->getRequest();
         $response = $event->getResponse();
         $requestMetrics = $this->metricsFactory->create();
-
-        $requestData = [
-            'params' => $request->toArray(),
-            'headers' => $request->headers->all(),
-        ];
 
         $logLevel = match (true) {
             $response->getStatusCode() >= 200 && $response->getStatusCode() < 400 => Level::Info,
@@ -39,9 +34,10 @@ class RequestListener
 
         $this->logger->log($logLevel, 'HTTP Request', [
             'method' => $request->getMethod(),
+            'route' => $request->attributes->get('_route', 'unknown'),
             'uri' => $request->getRequestUri(),
-            'request' => $requestData,
-            'response' => $response->getContent(),
+            'ip' => $request->getClientIp(),
+            'status_code' => $response->getStatusCode(),
             ...$requestMetrics->getContext(),
         ]);
     }

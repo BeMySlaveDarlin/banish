@@ -1,31 +1,22 @@
 <template>
   <div class="config-wrapper">
-    <div v-if="loading" class="loading-state">
-      <div class="spinner"></div>
-    </div>
+    <LoadingSpinner v-if="chatsStore.loading" />
 
-    <div v-else-if="config" class="config-content">
-      <div class="config-header">
-        <button class="btn-back" @click="goBack" title="Go back to chat details">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M19 12H5M12 19l-7-7 7-7"/>
-          </svg>
-        </button>
-        <div class="header-left">
-          <h1>Chat Configuration</h1>
-          <div class="chat-context">
-            <span class="chat-id">Chat #{{ chatId }}</span>
-            <span v-if="config.title" class="chat-title">— {{ config.title }}</span>
-          </div>
-        </div>
-        <div class="header-info" v-if="autosaveStatus">
-          <span :class="['status-text', autosaveStatus]">{{ autosaveStatusText }}</span>
-        </div>
-      </div>
+    <div v-else-if="chatsStore.chatConfig" class="config-content">
+      <PageHeader
+        title="Chat Configuration"
+        :subtitle="`Chat #${chatId}${chatsStore.chatConfig.title ? ' -- ' + chatsStore.chatConfig.title : ''}`"
+        show-back
+        back-title="Go back to chat details"
+        @back="goBack"
+      >
+        <template #actions>
+          <span v-if="autosaveStatus" :class="['status-text', autosaveStatus]">{{ autosaveStatusText }}</span>
+        </template>
+      </PageHeader>
 
-      <div v-if="message" :class="['alert', 'alert-' + messageType]">
-        {{ message }}
-      </div>
+      <ErrorAlert :message="chatsStore.error" @dismiss="chatsStore.clearError()" />
+
       <div class="config-grid">
         <div class="config-card main-form">
           <h2>Settings</h2>
@@ -33,49 +24,49 @@
             <div class="form-group">
               <label class="form-label">Ban Emoji</label>
               <input
-                  v-model="form.banEmoji"
-                  type="text"
-                  class="form-control"
-                  maxlength="2"
-                  placeholder="Enter emoji"
-                  :disabled="!form.enableReactions"
-                  @input="scheduleAutosave"
-              >
+                v-model="form.banEmoji"
+                type="text"
+                class="form-control"
+                maxlength="2"
+                placeholder="Enter emoji"
+                :disabled="!form.enableReactions"
+                @input="scheduleAutosave"
+              />
             </div>
 
             <div class="form-group">
               <label class="form-label">Forgive Emoji</label>
               <input
-                  v-model="form.forgiveEmoji"
-                  type="text"
-                  class="form-control"
-                  maxlength="2"
-                  placeholder="Enter emoji"
-                  :disabled="!form.enableReactions"
-                  @input="scheduleAutosave"
-              >
+                v-model="form.forgiveEmoji"
+                type="text"
+                class="form-control"
+                maxlength="2"
+                placeholder="Enter emoji"
+                :disabled="!form.enableReactions"
+                @input="scheduleAutosave"
+              />
             </div>
 
             <div class="form-group">
               <label class="form-label">Votes Required to Ban</label>
               <input
-                  v-model.number="form.votesRequired"
-                  type="number"
-                  class="form-control"
-                  min="1"
-                  @input="scheduleAutosave"
-              >
+                v-model.number="form.votesRequired"
+                type="number"
+                class="form-control"
+                min="1"
+                @input="scheduleAutosave"
+              />
             </div>
 
             <div class="form-group">
               <label class="form-label">Min Messages for Trust</label>
               <input
-                  v-model.number="form.minMessagesForTrust"
-                  type="number"
-                  class="form-control"
-                  min="0"
-                  @input="scheduleAutosave"
-              >
+                v-model.number="form.minMessagesForTrust"
+                type="number"
+                class="form-control"
+                min="0"
+                @input="scheduleAutosave"
+              />
             </div>
           </form>
         </div>
@@ -87,12 +78,12 @@
               <label class="toggle-label">Enabled</label>
               <div class="toggle-switch">
                 <input
-                    v-model="form.enabled"
-                    type="checkbox"
-                    class="toggle-input"
-                    id="enabled-toggle"
-                    @change="scheduleAutosave"
-                >
+                  id="enabled-toggle"
+                  v-model="form.enabled"
+                  type="checkbox"
+                  class="toggle-input"
+                  @change="scheduleAutosave"
+                />
                 <label for="enabled-toggle" class="toggle-slider"></label>
               </div>
             </div>
@@ -101,12 +92,12 @@
               <label class="toggle-label">Delete Messages</label>
               <div class="toggle-switch">
                 <input
-                    v-model="form.toggleDeleteMessage"
-                    type="checkbox"
-                    class="toggle-input"
-                    id="delete-toggle"
-                    @change="scheduleAutosave"
-                >
+                  id="delete-toggle"
+                  v-model="form.toggleDeleteMessage"
+                  type="checkbox"
+                  class="toggle-input"
+                  @change="scheduleAutosave"
+                />
                 <label for="delete-toggle" class="toggle-slider"></label>
               </div>
             </div>
@@ -115,13 +106,13 @@
               <label class="toggle-label">Only Delete</label>
               <div class="toggle-switch">
                 <input
-                    v-model="form.deleteOnly"
-                    type="checkbox"
-                    class="toggle-input"
-                    id="delete-only-toggle"
-                    :disabled="!form.toggleDeleteMessage"
-                    @change="scheduleAutosave"
-                >
+                  id="delete-only-toggle"
+                  v-model="form.deleteOnly"
+                  type="checkbox"
+                  class="toggle-input"
+                  :disabled="!form.toggleDeleteMessage"
+                  @change="scheduleAutosave"
+                />
                 <label for="delete-only-toggle" class="toggle-slider"></label>
               </div>
             </div>
@@ -130,12 +121,12 @@
               <label class="toggle-label">Enable Reactions</label>
               <div class="toggle-switch">
                 <input
-                    v-model="form.enableReactions"
-                    type="checkbox"
-                    class="toggle-input"
-                    id="reactions-toggle"
-                    @change="scheduleAutosave"
-                >
+                  id="reactions-toggle"
+                  v-model="form.enableReactions"
+                  type="checkbox"
+                  class="toggle-input"
+                  @change="scheduleAutosave"
+                />
                 <label for="reactions-toggle" class="toggle-slider"></label>
               </div>
             </div>
@@ -149,19 +140,20 @@
 </template>
 
 <script setup>
-import {computed, onMounted, reactive, ref} from 'vue'
-import {useRoute, useRouter} from 'vue-router'
-import api from '@/utils/api'
+import { computed, onUnmounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useChatsStore } from '@/stores/chats'
+import PageHeader from '@/components/PageHeader.vue'
+import LoadingSpinner from '@/components/LoadingSpinner.vue'
+import ErrorAlert from '@/components/ErrorAlert.vue'
 
 const route = useRoute()
 const router = useRouter()
-const chatId = route.params.chatId
-const config = ref(null)
-const loading = ref(false)
-const message = ref('')
-const messageType = ref('info')
+const chatsStore = useChatsStore()
+
 const autosaveStatus = ref(null)
 const autosaveTimeout = ref(null)
+const statusTimeout = ref(null)
 
 const AUTOSAVE_DELAY = 1500
 
@@ -173,8 +165,10 @@ const form = reactive({
   enabled: true,
   toggleDeleteMessage: true,
   deleteOnly: false,
-  enableReactions: false
+  enableReactions: false,
 })
+
+const chatId = computed(() => route.params.chatId)
 
 const autosaveStatusText = computed(() => {
   switch (autosaveStatus.value) {
@@ -190,31 +184,25 @@ const autosaveStatusText = computed(() => {
 })
 
 const loadConfig = async () => {
-  loading.value = true
   try {
-    const response = await api.get(`/api/admin/chat/${chatId}/config`)
-    config.value = response.data
+    await chatsStore.fetchChatConfig(chatId.value)
     resetForm()
-  } catch (error) {
-    console.error('Failed to load config:', error)
-    message.value = 'Failed to load configuration'
-    messageType.value = 'danger'
-  } finally {
-    loading.value = false
+  } catch {
+    // error handled in store
   }
 }
 
 const resetForm = () => {
-  if (config.value?.config) {
-    form.banEmoji = config.value.config.banEmoji || ''
-    form.forgiveEmoji = config.value.config.forgiveEmoji || ''
-    form.votesRequired = config.value.config.votesRequired || 0
-    form.minMessagesForTrust = config.value.config.minMessagesForTrust || 0
-    form.enabled = config.value.config.enabled ?? true
-    form.toggleDeleteMessage = config.value.config.toggleDeleteMessage ?? true
-    form.deleteOnly = config.value.config.deleteOnly ?? false
-    form.enableReactions = config.value.config.enableReactions ?? false
-    message.value = ''
+  if (chatsStore.chatConfig?.config) {
+    const c = chatsStore.chatConfig.config
+    form.banEmoji = c.banEmoji || ''
+    form.forgiveEmoji = c.forgiveEmoji || ''
+    form.votesRequired = c.votesRequired || 0
+    form.minMessagesForTrust = c.minMessagesForTrust || 0
+    form.enabled = c.enabled ?? true
+    form.toggleDeleteMessage = c.toggleDeleteMessage ?? true
+    form.deleteOnly = c.deleteOnly ?? false
+    form.enableReactions = c.enableReactions ?? false
   }
 }
 
@@ -232,106 +220,40 @@ const scheduleAutosave = () => {
 const saveConfig = async () => {
   try {
     autosaveStatus.value = 'saving'
-    const data = {
-      banEmoji: form.banEmoji,
-      forgiveEmoji: form.forgiveEmoji,
-      votesRequired: form.votesRequired,
-      minMessagesForTrust: form.minMessagesForTrust,
-      enabled: form.enabled,
-      toggleDeleteMessage: form.toggleDeleteMessage,
-      deleteOnly: form.deleteOnly,
-      enableReactions: form.enableReactions
-    }
-
-    await api.post(`/api/admin/chat/${chatId}/config`, data)
+    await chatsStore.saveChatConfig(chatId.value, { ...form })
     autosaveStatus.value = 'success'
-    setTimeout(() => {
+    statusTimeout.value = setTimeout(() => {
       autosaveStatus.value = null
     }, 2000)
-  } catch (error) {
-    console.error('Failed to save config:', error)
+  } catch {
     autosaveStatus.value = 'error'
-    message.value = 'Failed to save config: ' + error.message
-    messageType.value = 'danger'
-    setTimeout(() => {
+    statusTimeout.value = setTimeout(() => {
       autosaveStatus.value = null
     }, 3000)
   }
 }
 
 const goBack = () => {
-  router.push(`/chat/${chatId}`)
+  router.push(`/chat/${chatId.value}`)
 }
 
-onMounted(() => loadConfig())
+watch(() => route.params.chatId, () => {
+  loadConfig()
+}, { immediate: true })
+
+onUnmounted(() => {
+  if (autosaveTimeout.value) {
+    clearTimeout(autosaveTimeout.value)
+  }
+  if (statusTimeout.value) {
+    clearTimeout(statusTimeout.value)
+  }
+})
 </script>
 
 <style scoped>
 .config-wrapper {
-  padding: 30px;
-}
-
-.config-header {
-  display: flex;
-  align-items: flex-start;
-  gap: 15px;
-  margin-bottom: 30px;
-  padding-bottom: 20px;
-  border-bottom: 2px solid #e9ecef;
-}
-
-.btn-back {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #666;
-  padding: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  transition: all 0.3s ease;
-  flex-shrink: 0;
-  margin-top: 4px;
-}
-
-.btn-back:hover {
-  background-color: #f0f0f0;
-  color: #333;
-}
-
-.btn-back svg {
-  width: 20px;
-  height: 20px;
-}
-
-.header-left {
-  flex: 1;
-}
-
-.header-left h1 {
-  margin: 0 0 8px 0;
-  font-size: 28px;
-  color: #333;
-}
-
-.chat-context {
-  font-size: 14px;
-  color: #666;
-}
-
-.chat-id {
-  font-weight: 600;
-}
-
-.chat-title {
-  margin-left: 5px;
-  color: #999;
-}
-
-.header-info {
-  display: flex;
-  align-items: center;
+  max-width: 1400px;
 }
 
 .status-text {
@@ -354,31 +276,6 @@ onMounted(() => loadConfig())
 .status-text.error {
   color: #721c24;
   background-color: #f8d7da;
-}
-
-.alert {
-  margin: 0 30px 20px 30px;
-  padding: 15px;
-  border-radius: 6px;
-  background-color: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
-}
-
-.alert-danger {
-  background-color: #f8d7da;
-  color: #721c24;
-  border-color: #f5c6cb;
-}
-
-.loading-state {
-  display: flex;
-  justify-content: center;
-  padding: 60px 30px;
-}
-
-.config-content {
-  max-width: 1400px;
 }
 
 .config-grid {
@@ -524,46 +421,19 @@ onMounted(() => loadConfig())
   margin-top: 10px;
 }
 
-/* Responsive Design */
 @media (max-width: 1024px) {
   .config-grid {
     grid-template-columns: 1fr;
   }
-
-  .config-header {
-    flex-direction: column;
-    gap: 15px;
-  }
-
-  .header-left {
-    width: 100%;
-  }
 }
 
 @media (max-width: 768px) {
-  .config-wrapper {
-    padding: 15px;
-  }
-
-  .config-header {
-    padding-bottom: 15px;
-    margin-bottom: 20px;
-  }
-
   .config-card {
     padding: 20px;
   }
 
   .config-grid {
     gap: 20px;
-  }
-
-  .header-left h1 {
-    font-size: 22px;
-  }
-
-  .chat-context {
-    font-size: 12px;
   }
 }
 </style>

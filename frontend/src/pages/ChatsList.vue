@@ -1,25 +1,25 @@
 <template>
   <div class="chats-container">
-    <div class="page-header">
-      <h1>My Chats</h1>
-      <button class="btn btn-primary" @click="refreshChats">Refresh</button>
+    <PageHeader title="My Chats">
+      <template #actions>
+        <button class="btn btn-primary" @click="refreshChats">Refresh</button>
+      </template>
+    </PageHeader>
+
+    <ErrorAlert :message="chatsStore.error" @dismiss="chatsStore.clearError()" />
+
+    <div v-if="successMessage" class="alert alert-success">
+      {{ successMessage }}
     </div>
 
-    <div v-if="message" :class="['alert', 'alert-' + messageType]">
-      {{ message }}
-    </div>
+    <LoadingSpinner v-if="chatsStore.loading" text="Loading chats..." />
 
-    <div v-if="loading" class="loading-state">
-      <div class="spinner"></div>
-      <p>Loading chats...</p>
-    </div>
-
-    <div v-else-if="chats.length === 0" class="empty-state">
+    <div v-else-if="chatsStore.chatsList.length === 0" class="empty-state">
       <p>You don't have access to any chats yet.</p>
     </div>
 
     <div v-else class="chats-grid">
-      <div v-for="chat in chats" :key="chat.id" class="chat-card">
+      <div v-for="chat in chatsStore.chatsList" :key="chat.id" class="chat-card">
         <div class="chat-header">
           <h2>{{ chat.title }}</h2>
           <span v-if="!chat.isEnabled" class="badge badge-warning">Disabled</span>
@@ -56,71 +56,40 @@
 </template>
 
 <script setup>
-import {onMounted, ref} from 'vue'
-import api from '@/utils/api'
+import { ref, onMounted } from 'vue'
+import { useChatsStore } from '@/stores/chats'
+import PageHeader from '@/components/PageHeader.vue'
+import LoadingSpinner from '@/components/LoadingSpinner.vue'
+import ErrorAlert from '@/components/ErrorAlert.vue'
 
-console.log('📋 ChatsList.vue script setup executed')
-
-const chats = ref([])
-const loading = ref(false)
-const message = ref('')
-const messageType = ref('info')
+const chatsStore = useChatsStore()
+const successMessage = ref('')
 
 const loadChats = async () => {
-  console.log('📥 Loading chats...')
-  loading.value = true
-  message.value = ''
-
   try {
-    console.log('🌐 Sending request to /api/admin/chats')
-    const response = await api.get('/api/admin/chats')
-    console.log('✅ Chats loaded:', response.data)
-    chats.value = response.data.chats || []
-    console.log('📊 Chats count:', chats.value.length)
-  } catch (error) {
-    console.error('❌ Failed to load chats:', error)
-    console.error('Response data:', error.response?.data)
-    message.value = 'Failed to load chats: ' + (error.response?.data?.error || error.message)
-    messageType.value = 'danger'
-  } finally {
-    loading.value = false
+    await chatsStore.fetchChats()
+  } catch {
+    // error is handled in store
   }
 }
 
 const refreshChats = async () => {
-  console.log('🔄 Refreshing chats...')
   await loadChats()
-  message.value = 'Chats refreshed!'
-  messageType.value = 'success'
-  setTimeout(() => {
-    message.value = ''
-  }, 3000)
+  if (!chatsStore.error) {
+    successMessage.value = 'Chats refreshed!'
+    setTimeout(() => {
+      successMessage.value = ''
+    }, 3000)
+  }
 }
 
-onMounted(() => {
-  console.log('📌 ChatsList.vue mounted')
-  loadChats()
-})
+onMounted(() => loadChats())
 </script>
 
 <style scoped>
 .chats-container {
   max-width: 1200px;
   margin: 0 auto;
-}
-
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-  gap: 15px;
-  flex-wrap: wrap;
-}
-
-.page-header h1 {
-  font-size: 28px;
-  margin: 0;
 }
 
 .chats-grid {
@@ -198,13 +167,11 @@ onMounted(() => {
   min-width: 120px;
 }
 
-.loading-state,
 .empty-state {
   text-align: center;
   padding: 60px 20px;
 }
 
-.loading-state p,
 .empty-state p {
   color: #777;
   font-size: 16px;
@@ -212,19 +179,6 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
-  .page-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .page-header h1 {
-    margin-bottom: 10px;
-  }
-
-  .page-header button {
-    width: 100%;
-  }
-
   .chats-grid {
     grid-template-columns: 1fr;
   }

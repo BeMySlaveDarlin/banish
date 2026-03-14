@@ -1,282 +1,193 @@
-# Banish - Telegram Moderation Bot
+# Banish
 
-[![PHP](https://img.shields.io/badge/PHP-8.3-777BB4?logo=php)](https://php.net)
-[![Symfony](https://img.shields.io/badge/Symfony-6.4-000000?logo=symfony)](https://symfony.com)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql)](https://www.postgresql.org)
-[![Docker](https://img.shields.io/badge/Docker-26.1-2496ED?logo=docker)](https://www.docker.com)
+[![Build & Test](https://github.com/BeMySlaveDarlin/banish/actions/workflows/build.yml/badge.svg)](https://github.com/BeMySlaveDarlin/banish/actions)
+[![PHP 8.3](https://img.shields.io/badge/PHP-8.3-777BB4?logo=php)](https://php.net)
+[![Symfony 6.4](https://img.shields.io/badge/Symfony-6.4-000000?logo=symfony)](https://symfony.com)
+[![PostgreSQL 15](https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql)](https://www.postgresql.org)
 
----
+Telegram bot for democratic chat moderation. Community members vote to ban or forgive spammers through reactions, buttons, or commands.
 
-## About
+## How It Works
 
-**Banish** is a Telegram bot for democratic chat moderation. It allows community members to vote on banning or forgiving spammers through reactions, buttons, or commands.
+**Start a ban** in any of three ways:
 
-### Features
+| Method | How |
+|--------|-----|
+| Command | Reply to spam with `/ban` |
+| Mention | Reply to spam with `@bot_name` |
+| Reaction | React to spam with ban emoji |
 
-- ✅ **Three ways to start a ban**: `/ban` command, bot mention, message reaction
-- ✅ **Flexible voting**: inline buttons or reactions with customizable emoji
-- ✅ **Admin panel**: manage chat settings, view history
-- ✅ **Trusted users**: protect active members and admins from bans
-- ✅ **Async processing**: scalable with message queues
-- ✅ **Security**: admins are immune from banning
+**Vote** using inline buttons or reactions on the original message. When the required vote count is reached, the spammer is banned and their messages are deleted. If forgive votes win, the procedure is cancelled.
 
-### Tech Stack
+Admins and trusted users (configurable message threshold) are immune from banning.
 
-**Backend:** PHP 8.3 • Symfony 6.4 • PostgreSQL 15 • RabbitMQ
-**Frontend:** Vue.js 3 • Vite • Vue Router
-**Infrastructure:** Docker • Nginx • Supervisor
+## Tech Stack
 
----
+| Layer | Stack |
+|-------|-------|
+| Backend | PHP 8.3, Symfony 6.4, Doctrine ORM |
+| Database | PostgreSQL 15 (with table partitioning) |
+| Queue | RabbitMQ + Symfony Messenger |
+| Cache | Memcached |
+| Frontend | Vue 3, Pinia, Vite |
+| Infrastructure | Docker, Nginx, Supervisor |
+| CI/CD | GitHub Actions (6-stage pipeline) |
+| Testing | PHPUnit 12 (162 tests), Vitest (60 tests) |
 
-## Usage
+## Quick Start
 
-### Starting a Ban Procedure
-
-**Option 1: Command**
-
-```
-Reply to spammer's message: /ban
-```
-
-**Option 2: Bot Mention**
-
-```
-Reply to spammer's message: @bot_name
-```
-
-**Option 3: Reaction**
-
-```
-Long-press message → Add reaction → Select ban emoji (default: 👎)
-```
-
-### Voting
-
-After ban procedure starts, members vote using:
-
-**Inline Buttons**
-
-- 🔨 Ban — vote for ban
-- 🕊️ Forgive — vote for forgiveness
-
-**Reactions on Original Message**
-
-- Ban emoji (👎) = vote for ban
-- Forgive emoji (👍) = vote for forgiveness
-- Remove reaction = cancel vote
-
-### Vote Results
-
-When required vote count is reached (configurable):
-
-- **Ban approved** → User blocked, spam message deleted
-- **Forgive approved** → Procedure cancelled, user remains in chat
-
-### Bot Commands
-
-| Command  | Description          | Access      |
-|----------|----------------------|-------------|
-| `/help`  | Bot help             | Everyone    |
-| `/ban`   | Start ban procedure  | Everyone    |
-| `/admin` | Get admin panel link | Chat admins |
-
-### Admin Panel
-
-Access via `/admin`. Configure per-chat settings:
-
-- Vote count required for ban
-- Emoji for reactions
-- Minimum messages for "trusted" user protection
-- Delete spam message after ban
-- Enable/disable voting by reactions
-
----
-
-## Installation
-
-### Requirements
+### Prerequisites
 
 - Docker & Docker Compose
-- 8+ vCPU, 16+ GB RAM (for production)
-- Public domain with HTTPS
+- Domain with HTTPS (for production webhook)
 
-### Clone & Setup
+### Setup
 
 ```bash
 git clone git@github.com:BeMySlaveDarlin/banish.git
 cd banish
-```
-
-### Docker Compose Configuration
-
-Copy appropriate compose file for your environment:
-
-```bash
-# For production
-cp docker/docker-compose.prod.yaml docker-compose.override.yaml
-
-# For development
-cp docker/docker-compose.dev.yaml docker-compose.override.yaml
-```
-
-Or use Docker's default override mechanism — it will automatically load `docker-compose.override.yaml`.
-
-### Environment Configuration
-
-```bash
 cp .env.example .env
+
+# Choose environment
+cp docker/dummy/compose/docker-compose.dev.yaml docker-compose.override.yaml   # development
+cp docker/dummy/compose/docker-compose.prod.yaml docker-compose.override.yaml  # production
 ```
 
-**Required .env parameters:**
+Edit `.env` with your values:
 
-| Parameter            | Description                                 |
-|----------------------|---------------------------------------------|
-| `APP_ENV`            | Environment: `prod`, `dev`, `local`, `test` |
-| `APP_SECRET`         | Webhook signature secret (random string)    |
-| `TELEGRAM_BOT_NAME`  | Bot username without `@`                    |
-| `TELEGRAM_BOT_TOKEN` | Bot API token from BotFather                |
-| `DATABASE_PORTS`     | PostgreSQL port (change from default)       |
-| `MEMCACHED_PORTS`    | Memcached port (change from default)        |
+```env
+APP_SECRET=your_random_secret
+TELEGRAM_BOT_NAME=your_bot_name
+TELEGRAM_BOT_TOKEN=your_bot_token
+```
 
-### SSL Certificates
-
-**For production:**
-Place in `var/ssl/`:
-
-- `server.crt` — public certificate
-- `server.key` — private key
-
-**For development:**
-Certificates are generated automatically on first build:
+### Run
 
 ```bash
-make                  # Automatically generates SSL for NGINX_BACKEND_DOMAIN
+make all          # build, start, install deps, migrate, cleanup
 ```
 
-Or manually:
+That's it. The bot is running.
+
+### Telegram Webhook
 
 ```bash
-mkdir -p var/ssl
-openssl req -x509 -newkey rsa:4096 -keyout var/ssl/server.key -out var/ssl/server.crt -days 365 -nodes -subj "/CN=${NGINX_BACKEND_DOMAIN:-localhost}"
+curl "https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://<DOMAIN>/api/telegram/webhook/v2/<APP_SECRET>&allowed_updates=[\"message\",\"callback_query\",\"message_reaction\",\"my_chat_member\"]"
 ```
 
-### Start Services
+Add the bot to your group with permissions: read/send/delete messages, ban users.
+
+## Admin Panel
+
+Web interface for managing chats, users, and settings.
+
+### Access
+
+Generate a login link via Telegram (`/admin` command in chat) or via CLI:
 
 ```bash
-make                  # Full build and start
-make down             # Stop all services
-make restart          # Rebuild and restart
-make db-migrate       # Run migrations
-make clear-cache      # Clear cache
+docker compose exec app php bin/console app:admin:generate-link <USER_ID>
 ```
 
----
+### Features
+
+- **Chats** -- list of managed chats with statistics
+- **Users** -- member list, ban history, manual unban
+- **Config** -- votes required, emoji, trust threshold, delete mode
+- **Audit Logs** -- admin action history
+
+## CLI Commands
+
+```bash
+# Admin
+docker compose exec app php bin/console app:admin:generate-link <userId>   # login link
+docker compose exec app php bin/console app:admin:ban-user <chatId> <userId>  # manual ban
+
+# Maintenance
+make db-migrate          # run migrations
+make quality             # PHPStan + PHPCS
+make clear-all           # clear cache + logs
+make refresh-partitions  # refresh DB partitions
+make frontend-build      # rebuild frontend
+```
 
 ## Configuration
 
-### Telegram Setup
+### Per-Chat Settings (Admin Panel)
 
-**1. Create Bot**
+| Setting | Default | Description |
+|---------|---------|-------------|
+| Votes Required | 3 | Votes needed to approve ban |
+| Ban Emoji | :thumbsdown: | Reaction emoji for ban votes |
+| Forgive Emoji | :thumbsup: | Reaction emoji for forgive votes |
+| Min Messages for Trust | 5 | Messages before user becomes "trusted" |
+| Delete Messages | true | Delete spammer's messages on ban |
+| Delete Only | false | Delete message without banning user |
+| Enable Reactions | true | Allow voting via reactions |
 
-- Talk to [@BotFather](https://telegram.me/BotFather)
-- Create new bot, get token
+### Environment Variables
 
-**2. Set Webhook**
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `APP_SECRET` | Yes | Webhook secret (random string) |
+| `TELEGRAM_BOT_TOKEN` | Yes | Token from @BotFather |
+| `TELEGRAM_BOT_NAME` | Yes | Bot username without @ |
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `MESSENGER_TRANSPORT_DSN` | Yes | RabbitMQ connection string |
+
+See `.env.example` for all available variables.
+
+## Architecture
+
+Clean Architecture with strict layer separation:
+
+```
+src/
+├── Application/      # CQRS commands + handlers
+├── Domain/           # Business logic, entities, services
+├── Infrastructure/   # Symfony integration, Doctrine, Telegram routing
+└── Presentation/     # Controllers, console commands
+```
+
+Key patterns:
+- **CQRS**: Command -> Handler via Symfony Messenger
+- **ISP**: TelegramApiService split into ChatMember/Message/Webhook interfaces
+- **Rich Domain**: Ban entity with state machine (pending -> banned/forgiven/expired)
+- **Auto-discovery**: PHP attributes for command/handler registration
+
+## Development
 
 ```bash
-curl "https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://<DOMAIN>/api/telegram/webhook/<APP_SECRET>"
+make build            # rebuild containers
+make up               # start
+make down             # stop
+make phpstan          # static analysis (level 9)
+make cs-check         # code style check
+make cs-fix           # auto-fix code style
 ```
 
-Verify:
+### Running Tests
 
 ```bash
-curl "https://api.telegram.org/bot<TOKEN>/getWebhookInfo"
+# Backend
+docker compose exec app php vendor/bin/phpunit
+
+# Frontend
+docker compose exec frontend npm test
 ```
 
-**3. Add to Group**
+### CI Pipeline
 
-- Add bot as member with permissions:
-    - Read messages
-    - Send messages
-    - Delete messages
-    - Ban users
+6-stage GitHub Actions pipeline:
 
-### Group Settings
+```
+backend-build  --> backend-quality (PHPStan + PHPCS)
+               --> backend-test    (PHPUnit + PostgreSQL)
 
-For reaction voting to work:
-
-1. **Enable Reactions**
-    - Group Settings → Reactions → Enable
-
-2. **Bot Receives Updates**
-    - Webhook has `message_reaction` in `allowed_updates`
-
-3. **Enable in Admin Panel**
-    - Set `enableReactions: true` (default)
-
-### Per-Chat Configuration
-
-In admin panel (`/admin`):
-
-- **Votes Required** — votes to approve ban (default: 3)
-- **Ban Emoji** — emoji for ban votes (default: 👎)
-- **Forgive Emoji** — emoji for forgiveness (default: 👍)
-- **Min Messages for Trust** — messages to protect user (default: 5)
-- **Delete Spam** — remove spam message after ban (default: true)
-- **Enable Reactions** — allow reaction voting (default: true)
-
-### Auto Cleanup
-
-Configure in database `queue_schedule_rule` table:
-
-```sql
--- Every 6 hours
-UPDATE queue_schedule_rule
-SET rule = '0 */6 * * *'
-WHERE schedule = 'clear_bot_messages';
-
--- Or use intervals (1 day, 7 days, etc)
-UPDATE queue_schedule_rule
-SET rule = '1 day'
-WHERE schedule = 'clear_bot_messages';
-
--- Disable cleanup
-DELETE
-FROM queue_schedule_rule
-WHERE schedule = 'clear_bot_messages';
+frontend-build --> frontend-quality (ESLint)
+               --> frontend-test    (Vitest)
 ```
 
----
+## License
 
-## Troubleshooting
-
-**Reactions not creating ban:**
-
-- Verify reactions enabled in group settings
-- Check webhook has `message_reaction` in `allowed_updates`
-- View logs: `docker-compose logs app`
-
-**Voting doesn't work:**
-
-- Verify correct emoji in admin panel
-- Check chat enabled (`enabled: true`)
-- Check vote count threshold
-
-**"Admin is immune" message:**
-
-- Expected — group admins cannot be banned
-
-**Webhook issues:**
-
-- Test: `curl "https://api.telegram.org/bot<TOKEN>/getWebhookInfo"`
-- Verify domain DNS resolves
-- Check HTTPS certificate is valid
-
----
-
-## Contributing
-
-Found a bug or have an idea?
-
-- **New features:** [Create PR](https://github.com/BeMySlaveDarlin/banish/pulls)
-- **Report issue:** [Create Issue](https://github.com/BeMySlaveDarlin/banish/issues)
+MIT

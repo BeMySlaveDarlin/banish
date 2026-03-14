@@ -8,7 +8,7 @@ use App\Infrastructure\Http\Controller\AbstractApiController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 
-class IndexController extends AbstractApiController
+final class IndexController extends AbstractApiController
 {
     public function handleAction(): Response
     {

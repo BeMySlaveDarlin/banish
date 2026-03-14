@@ -10,7 +10,7 @@ use App\Domain\Telegram\Entity\TelegramChatUserBanEntity;
 use App\Domain\Telegram\Entity\TelegramChatUserEntity;
 use App\Domain\Telegram\Enum\VoteType;
 
-class BanMessageFormatter
+final readonly class BanMessageFormatter implements BanMessageFormatterInterface
 {
     public function formatStartBanMessage(
         TelegramChatUserEntity $reporter,

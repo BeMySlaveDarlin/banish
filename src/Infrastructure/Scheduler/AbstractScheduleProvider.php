@@ -47,11 +47,7 @@ abstract class AbstractScheduleProvider implements ScheduleProviderInterface
     {
         $messageClass = $entity->message;
         $options = $entity->options?->toArray() ?? ['data' => null];
-        if (empty($options) || empty($options['data'])) {
-            $message = new $messageClass();
-        } else {
-            $message = new $messageClass(...$options);
-        }
+        $message = SchedulerMessageFactory::create($messageClass, $options);
 
         if ($entity->type === 'cron') {
             return RecurringMessage::cron($entity->rule, $message, new DateTimeZone('UTC'));

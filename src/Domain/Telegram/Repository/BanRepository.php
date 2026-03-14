@@ -12,7 +12,7 @@ use Doctrine\Persistence\ManagerRegistry;
 /**
  * @extends ServiceEntityRepository<TelegramChatUserBanEntity>
  */
-class BanRepository extends ServiceEntityRepository
+final class BanRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
@@ -52,7 +52,7 @@ class BanRepository extends ServiceEntityRepository
     /**
      * @return array<int, TelegramChatUserBanEntity>
      */
-    public function findOldPending(BanStatus $status, \DateTimeImmutable $date): array
+    public function findOldPending(BanStatus $status, \DateTimeImmutable $date, int $limit = 100): array
     {
         return $this
             ->createQueryBuilder('b')
@@ -60,6 +60,7 @@ class BanRepository extends ServiceEntityRepository
             ->andWhere('b.createdAt <= :date')
             ->setParameter('status', $status)
             ->setParameter('date', $date)
+            ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
     }
@@ -93,16 +94,14 @@ class BanRepository extends ServiceEntityRepository
         ?int $spamMessageId = null,
         ?int $initialMessageId = null
     ): TelegramChatUserBanEntity {
-        $ban = new TelegramChatUserBanEntity();
-        $ban->chatId = $chatId;
-        $ban->reporterId = $reporterId;
-        $ban->spammerId = $spammerId;
-        $ban->banMessageId = $banMessageId;
-        $ban->spamMessageId = $spamMessageId;
-        $ban->initialMessageId = $initialMessageId;
-        $ban->status = BanStatus::PENDING;
-
-        return $ban;
+        return TelegramChatUserBanEntity::create(
+            $chatId,
+            $reporterId,
+            $spammerId,
+            $banMessageId,
+            $spamMessageId,
+            $initialMessageId
+        );
     }
 
     public function countByChat(int $chatId): int
@@ -127,6 +126,72 @@ class BanRepository extends ServiceEntityRepository
             ->setParameter('status', BanStatus::PENDING)
             ->getQuery()
             ->getSingleScalarResult();
+    }
+
+    /**
+     * @param array<int, int> $chatIds
+     * @return array<int, array{totalBans: int, activeBans: int}>
+     */
+    public function countByChatsBatch(array $chatIds): array
+    {
+        if (empty($chatIds)) {
+            return [];
+        }
+
+        $rows = $this
+            ->createQueryBuilder('b')
+            ->select(
+                'b.chatId',
+                'COUNT(b.id) AS totalBans',
+                'SUM(CASE WHEN b.status = :pendingStatus THEN 1 ELSE 0 END) AS activeBans'
+            )
+            ->where('b.chatId IN (:chatIds)')
+            ->setParameter('chatIds', $chatIds)
+            ->setParameter('pendingStatus', BanStatus::PENDING)
+            ->groupBy('b.chatId')
+            ->getQuery()
+            ->getResult();
+
+        $result = [];
+        foreach ($rows as $row) {
+            $result[(int) $row['chatId']] = [
+                'totalBans' => (int) $row['totalBans'],
+                'activeBans' => (int) $row['activeBans'],
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param array<int, int> $userIds
+     * @return array<int, int>
+     */
+    public function countActiveBansByUsersBatch(array $userIds, int $chatId): array
+    {
+        if (empty($userIds)) {
+            return [];
+        }
+
+        $rows = $this
+            ->createQueryBuilder('b')
+            ->select('b.spammerId', 'COUNT(b.id) AS bansCount')
+            ->where('b.spammerId IN (:userIds)')
+            ->andWhere('b.chatId = :chatId')
+            ->andWhere('b.status IN (:statuses)')
+            ->setParameter('userIds', $userIds)
+            ->setParameter('chatId', $chatId)
+            ->setParameter('statuses', [BanStatus::BANNED])
+            ->groupBy('b.spammerId')
+            ->getQuery()
+            ->getResult();
+
+        $result = [];
+        foreach ($rows as $row) {
+            $result[(int) $row['spammerId']] = (int) $row['bansCount'];
+        }
+
+        return $result;
     }
 
     /**

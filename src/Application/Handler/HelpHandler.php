@@ -8,10 +8,12 @@ use App\Application\Command\Telegram\HelpCommand;
 use App\Domain\Telegram\Command\TelegramCommandInterface;
 use App\Domain\Telegram\Command\TelegramHandlerInterface;
 use App\Domain\Telegram\Constants\Messages;
-use App\Domain\Telegram\Service\TelegramApiService;
+use App\Domain\Telegram\Service\TelegramMessageApiInterface;
 use App\Domain\Telegram\ValueObject\Bot\TelegramSendMessage;
+use App\Infrastructure\Telegram\Attribute\AsTelegramHandler;
 
-class HelpHandler implements TelegramHandlerInterface
+#[AsTelegramHandler(HelpCommand::class)]
+final readonly class HelpHandler implements TelegramHandlerInterface
 {
     private const array COMMANDS = [
         '/ban' => ['Start ban process', '—', '/ban'],
@@ -20,8 +22,8 @@ class HelpHandler implements TelegramHandlerInterface
     ];
 
     public function __construct(
-        private readonly TelegramApiService $telegramApiService,
-        private readonly string $botName
+        private TelegramMessageApiInterface $messageApi,
+        private string $botName
     ) {
     }
 
@@ -68,7 +70,7 @@ class HelpHandler implements TelegramHandlerInterface
 
             $message = new TelegramSendMessage($command->chat->chatId, $table);
             $message->parse_mode = 'HTML';
-            $this->telegramApiService->sendMessage($message);
+            $this->messageApi->sendMessage($message);
 
             return Messages::MESSAGE_PROCESSED;
         }

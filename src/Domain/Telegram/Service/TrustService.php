@@ -9,14 +9,14 @@ use App\Domain\Telegram\Repository\RequestHistoryRepository;
 use App\Domain\Telegram\Repository\UserRepository;
 use DateTimeImmutable;
 
-class TrustService
+final readonly class TrustService implements TrustServiceInterface
 {
     private const int TRUST_PERIOD_DAYS = 7;
 
     public function __construct(
-        private readonly RequestHistoryRepository $requestHistoryRepository,
-        private readonly ChatConfigServiceInterface $chatConfigService,
-        private readonly UserRepository $userRepository
+        private RequestHistoryRepository $requestHistoryRepository,
+        private ChatConfigServiceInterface $chatConfigService,
+        private UserRepository $userRepository
     ) {
     }
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Telegram\Entity;
 
 use App\Domain\Telegram\Enum\VoteType;
@@ -13,7 +15,6 @@ use Doctrine\ORM\Mapping\HasLifecycleCallbacks;
 use Doctrine\ORM\Mapping\Id;
 use Doctrine\ORM\Mapping\Index;
 use Doctrine\ORM\Mapping\ManyToOne;
-use Doctrine\ORM\Mapping\OneToOne;
 use Doctrine\ORM\Mapping\PrePersist;
 use Doctrine\ORM\Mapping\PreUpdate;
 use Doctrine\ORM\Mapping\SequenceGenerator;
@@ -53,10 +54,10 @@ class TelegramChatUserBanVoteEntity
     #[Column(name: 'updated_at', type: Types::DATETIME_IMMUTABLE, options: ["default" => "CURRENT_TIMESTAMP"])]
     public DateTimeImmutable $updatedAt;
 
-    #[ManyToOne(targetEntity: TelegramChatUserBanEntity::class)]
+    #[ManyToOne(targetEntity: TelegramChatUserBanEntity::class, inversedBy: 'votes')]
     public TelegramChatUserBanEntity $ban;
 
-    #[OneToOne(targetEntity: TelegramChatUserEntity::class)]
+    #[ManyToOne(targetEntity: TelegramChatUserEntity::class)]
     public ?TelegramChatUserEntity $user = null;
 
     #[PrePersist]

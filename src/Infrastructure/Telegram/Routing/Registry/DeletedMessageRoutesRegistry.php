@@ -18,4 +18,9 @@ final readonly class DeletedMessageRoutesRegistry implements RouteRegistryInterf
     {
         return DeletedMessageCommand::class;
     }
+
+    public static function getPriority(): int
+    {
+        return 40;
+    }
 }

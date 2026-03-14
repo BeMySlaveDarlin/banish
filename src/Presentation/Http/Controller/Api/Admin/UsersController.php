@@ -12,23 +12,23 @@ use App\Domain\Telegram\Repository\BanRepository;
 use App\Domain\Telegram\Repository\ChatRepository;
 use App\Domain\Telegram\Repository\UserRepository;
 use App\Domain\Telegram\Repository\VoteRepository;
-use App\Domain\Telegram\Service\TelegramApiService;
+use App\Domain\Telegram\Service\BanServiceInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
-class UsersController extends AbstractAdminController
+final class UsersController extends AbstractAdminController
 {
     public function __construct(
-        protected ChatRepository $chatRepository,
-        protected UserRepository $userRepository,
         protected BanRepository $banRepository,
         protected VoteRepository $voteRepository,
         protected AdminActionLogService $logService,
-        protected TelegramApiService $telegramApiService,
+        protected BanServiceInterface $banService,
+        UserRepository $userRepository,
+        ChatRepository $chatRepository,
         AdminSessionService $sessionService,
     ) {
-        parent::__construct($sessionService);
+        parent::__construct($sessionService, $userRepository, $chatRepository);
     }
 
     public function listAction(
@@ -57,8 +57,11 @@ class UsersController extends AbstractAdminController
         $totalCount = $this->userRepository->countByChat($chatId);
         $users = $this->userRepository->findByChatWithPagination($chatId, $limit, $offset);
 
-        $usersData = array_map(function ($user) use ($chatId) {
-            $activeBans = $this->banRepository->findActiveBansBySpammer($user->userId, $chatId);
+        $userIds = array_map(static fn($user) => $user->userId, $users);
+        $activeBansCounts = $this->banRepository->countActiveBansByUsersBatch($userIds, $chatId);
+
+        $usersData = array_map(static function ($user) use ($activeBansCounts) {
+            $bansCount = $activeBansCounts[$user->userId] ?? 0;
 
             return [
                 'id' => $user->userId,
@@ -66,10 +69,8 @@ class UsersController extends AbstractAdminController
                 'name' => $user->name,
                 'isAdmin' => $user->isAdmin,
                 'isBot' => $user->isBot,
-                'messagesCount' => $user->messagesCount,
-                'trustedCount' => $user->trustedCount,
-                'isBanned' => !empty($activeBans),
-                'bansCount' => count($activeBans),
+                'isBanned' => $bansCount > 0,
+                'bansCount' => $bansCount,
             ];
         }, $users);
 
@@ -118,13 +119,13 @@ class UsersController extends AbstractAdminController
         ]);
 
         $activeBans = $this->banRepository->findActiveBansBySpammer($user->userId, $chatId);
-        $bansData = array_map(static function ($ban) {
+        $bansData = array_map(function ($ban) {
             return [
                 'id' => $ban->id,
-                'status' => $ban->status->value,
+                'status' => $ban->getStatus()->value,
                 'createdAt' => $ban->createdAt->format('Y-m-d H:i:s'),
-                'votesFor' => $ban->votesFor,
-                'votesAgainst' => $ban->votesAgainst,
+                'votesFor' => $this->voteRepository->countVotesByType($ban, \App\Domain\Telegram\Enum\VoteType::BAN),
+                'votesAgainst' => $this->voteRepository->countVotesByType($ban, \App\Domain\Telegram\Enum\VoteType::FORGIVE),
             ];
         }, $bans);
 
@@ -134,11 +135,9 @@ class UsersController extends AbstractAdminController
             'name' => $user->name,
             'isAdmin' => $user->isAdmin,
             'isBot' => $user->isBot,
-            'messagesCount' => $user->messagesCount,
-            'trustedCount' => $user->trustedCount,
             'bans' => $bansData,
             'bansCount' => count($bansData),
-            'isBanned' => count($activeBans),
+            'isBanned' => count($activeBans) > 0,
         ]);
 
         $this->refreshSessionCookie($request, $response);
@@ -169,17 +168,10 @@ class UsersController extends AbstractAdminController
         }
 
         try {
-            $this->telegramApiService->unbanChatMember($chatId, $userId);
-        } catch (\Throwable $e) {
-            return $this->json(['error' => 'Failed to unban user in Telegram: ' . $e->getMessage()], 500);
+            $this->banService->adminUnban($chatId, $userId, $activeBans);
+        } catch (\Throwable) {
+            return $this->json(['error' => 'Failed to unban user in Telegram'], 500);
         }
-
-        foreach ($activeBans as $ban) {
-            $this->voteRepository->deleteByBan($ban, flush: false);
-            $this->banRepository->remove($ban, flush: false);
-        }
-        $this->voteRepository->flush();
-        $this->banRepository->flush();
 
         $this->logService->log(
             $session->userId,

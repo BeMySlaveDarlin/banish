@@ -24,13 +24,10 @@ composer-update:
 	@docker exec -it ${APP_NAME}.service.app composer update
 var-preps:
 	@echo "Settings on var dir"
-	@sudo mkdir -p var/cache
-	@sudo mkdir -p var/log
-	@sudo mkdir -p var/log/supervisor
-	@sudo mkdir -p var/ssl
-	@sudo cp -n docker/dummy/ssl/* var/ssl/
-	@sudo mkdir -p vendor
-	@sudo chmod -R 777 var vendor
+	@mkdir -p var/cache var/log var/log/supervisor var/log/nginx var/ssl vendor
+	@cp -n docker/dummy/ssl/* var/ssl/ 2>/dev/null || true
+	@chmod -R 777 var
+	@chmod -R u+rwX,g+rwX,o+rwX vendor
 
 db-migrate:
 	@echo "Running database migrations"
@@ -59,9 +56,7 @@ clear-cache:
 	@rm -rf var/cache/*
 clear-logs:
 	@echo "Clearing all logs"
-	@rm -rf var/log/*.log
-	@rm -rf var/log/supervisor/*.log
-	@rm -rf var/log/nginx/*.log
+	@find var/log -name '*.log' -exec truncate -s 0 {} + 2>/dev/null || true
 
 phpstan:
 	@echo "Running PHPStan static analysis"

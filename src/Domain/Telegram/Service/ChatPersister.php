@@ -7,11 +7,12 @@ namespace App\Domain\Telegram\Service;
 use App\Domain\Telegram\Entity\TelegramChatEntity;
 use App\Domain\Telegram\Repository\ChatRepository;
 use App\Domain\Telegram\ValueObject\TelegramMessageChat;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 
-class ChatPersister
+final readonly class ChatPersister implements ChatPersisterInterface
 {
     public function __construct(
-        private readonly ChatRepository $chatRepository
+        private ChatRepository $chatRepository
     ) {
     }
 
@@ -22,7 +23,16 @@ class ChatPersister
 
         if ($existing === null) {
             $chatType = $chat->type ?? '';
-            $existing = $this->chatRepository->createChat($chatId, $chatType);
+            try {
+                $existing = $this->chatRepository->createChat($chatId, $chatType);
+                $this->chatRepository->save($existing);
+            } catch (UniqueConstraintViolationException) {
+                $this->chatRepository->clear();
+                $existing = $this->chatRepository->findByChatId($chatId);
+                if ($existing === null) {
+                    throw new \RuntimeException("Failed to persist chat $chatId");
+                }
+            }
         }
 
         if (empty($existing->name)) {

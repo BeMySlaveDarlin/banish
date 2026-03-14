@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Telegram\ValueObject;
 
-class TelegramMessage
+final class TelegramMessage
 {
     public ?int $message_id = null;
     public int $date = 0;
@@ -65,7 +65,7 @@ class TelegramMessage
 
     public function hasBotMention(string $botName): bool
     {
-        if ($botName === null || stripos($this->text ?? '', $botName) === false) {
+        if (stripos($this->text ?? '', $botName) === false) {
             return false;
         }
 
@@ -107,7 +107,7 @@ class TelegramMessage
         }
         $text = str_replace('@', '', $text);
 
-        return trim($text, " \n\r\t\v\0\s");
+        return trim($text, " \n\r\t\v\0");
     }
 
     public function isBotCommand(): bool

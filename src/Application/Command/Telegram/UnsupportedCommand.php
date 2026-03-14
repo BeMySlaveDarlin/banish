@@ -7,7 +7,7 @@ namespace App\Application\Command\Telegram;
 use App\Domain\Telegram\Command\TelegramCommandInterface;
 use App\Domain\Telegram\ValueObject\TelegramUpdate;
 
-class UnsupportedCommand implements TelegramCommandInterface
+final class UnsupportedCommand implements TelegramCommandInterface
 {
     public function getChatId(): int
     {

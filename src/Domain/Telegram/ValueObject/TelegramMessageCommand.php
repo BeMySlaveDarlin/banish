@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Telegram\ValueObject;
 
-class TelegramMessageCommand
+final readonly class TelegramMessageCommand
 {
     /**
      * @param array<int, string> $options

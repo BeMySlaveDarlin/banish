@@ -7,10 +7,10 @@ namespace App\Domain\Telegram\Service;
 use App\Domain\Telegram\Repository\RequestHistoryRepository;
 use App\Domain\Telegram\ValueObject\TelegramUpdate;
 
-class HistoryService
+final readonly class HistoryService implements HistoryServiceInterface
 {
     public function __construct(
-        private readonly RequestHistoryRepository $requestHistoryRepository,
+        private RequestHistoryRepository $requestHistoryRepository,
     ) {
     }
 

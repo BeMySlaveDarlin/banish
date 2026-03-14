@@ -6,13 +6,17 @@ namespace App\Infrastructure\Telegram\Middleware;
 
 use App\Domain\Telegram\Command\TelegramCommandInterface;
 use App\Domain\Telegram\Exception\DuplicateUpdateException;
-use App\Domain\Telegram\Repository\RequestHistoryRepository;
 use App\Domain\Telegram\ValueObject\TelegramUpdate;
+use Psr\Cache\CacheItemPoolInterface;
+use Psr\Log\LoggerInterface;
 
 class DeduplicationMiddleware implements MiddlewareInterface
 {
+    private const int TTL_SECONDS = 60;
+
     public function __construct(
-        private readonly RequestHistoryRepository $requestHistoryRepository
+        private readonly CacheItemPoolInterface $cache,
+        private readonly LoggerInterface $logger
     ) {
     }
 
@@ -24,20 +28,25 @@ class DeduplicationMiddleware implements MiddlewareInterface
             return $command;
         }
 
-        $chatId = $update->getChat()->id ?? 0;
-        $fromId = $update->getFrom()->id ?? 0;
-        $messageId = $update->getMessageId() ?? 0;
         $updateId = $update->update_id;
+        $cacheKey = "dedup_update_$updateId";
 
-        $existing = $this->requestHistoryRepository->findByUpdate(
-            $chatId,
-            $fromId,
-            $messageId,
-            $updateId
-        );
+        try {
+            $item = $this->cache->getItem($cacheKey);
+            if ($item->isHit()) {
+                throw new DuplicateUpdateException($updateId);
+            }
 
-        if ($existing !== null) {
-            throw new DuplicateUpdateException($updateId);
+            $item->set(true);
+            $item->expiresAfter(self::TTL_SECONDS);
+            $this->cache->save($item);
+        } catch (DuplicateUpdateException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            $this->logger->warning('Deduplication cache unavailable, passing through', [
+                'updateId' => $updateId,
+                'error' => $e->getMessage(),
+            ]);
         }
 
         return $command;

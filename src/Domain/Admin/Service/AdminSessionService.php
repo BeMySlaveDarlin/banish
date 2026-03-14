@@ -4,15 +4,20 @@ declare(strict_types=1);
 
 namespace App\Domain\Admin\Service;
 
+use App\Domain\Admin\Entity\AdminExchangeTokenEntity;
 use App\Domain\Admin\Entity\AdminSessionEntity;
+use App\Domain\Admin\Repository\AdminExchangeTokenRepository;
 use App\Domain\Admin\Repository\AdminSessionRepository;
 use Psr\Log\LoggerInterface;
 use Ramsey\Uuid\Uuid;
 
 final readonly class AdminSessionService
 {
+    private const int EXCHANGE_TOKEN_TTL_SECONDS = 300;
+
     public function __construct(
         private AdminSessionRepository $sessionRepository,
+        private AdminExchangeTokenRepository $exchangeTokenRepository,
         private LoggerInterface $logger,
     ) {
     }
@@ -109,6 +114,53 @@ final readonly class AdminSessionService
             'userId' => $session->userId,
             'expiresAt' => $session->expiresAt->format('Y-m-d H:i:s'),
         ]);
+    }
+
+    public function createExchangeToken(int $userId, string $sessionId): AdminExchangeTokenEntity
+    {
+        $token = new AdminExchangeTokenEntity(
+            $this->generateToken(),
+            $userId,
+            $sessionId,
+            self::EXCHANGE_TOKEN_TTL_SECONDS
+        );
+        $this->exchangeTokenRepository->save($token);
+
+        $this->logger->info('Exchange token created', [
+            'userId' => $userId,
+            'expiresAt' => $token->expiresAt->format('Y-m-d H:i:s'),
+        ]);
+
+        return $token;
+    }
+
+    public function exchangeToken(string $tokenId): ?AdminSessionEntity
+    {
+        $token = $this->exchangeTokenRepository->findValidToken($tokenId);
+
+        if ($token === null) {
+            return null;
+        }
+
+        $token->markUsed();
+        $this->exchangeTokenRepository->save($token);
+
+        $session = $this->validateSession($token->sessionId);
+
+        if ($session === null) {
+            return null;
+        }
+
+        $this->logger->info('Exchange token used', [
+            'userId' => $token->userId,
+        ]);
+
+        return $session;
+    }
+
+    public function cleanupExpiredTokens(): int
+    {
+        return $this->exchangeTokenRepository->cleanupExpiredTokens();
     }
 
     private function generateToken(): string

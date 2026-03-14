@@ -6,7 +6,7 @@ namespace App\Domain\Telegram\ValueObject\Bot;
 
 use App\Domain\Telegram\ValueObject\TelegramMessageFrom;
 
-class TelegramChatMember
+final class TelegramChatMember
 {
     public const string CHAT_MEMBER_OWNER = 'creator';
     public const string CHAT_MEMBER_ADMIN = 'administrator';

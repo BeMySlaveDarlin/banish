@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace App\Application\Command\Telegram\Ban;
 
 use App\Application\Command\Telegram\AbstractTelegramCommand;
-use App\Domain\Telegram\Command\TelegramCommandInterface;
+use App\Infrastructure\Telegram\Attribute\AsTelegramCommand;
 
-class StartBanCommand extends AbstractTelegramCommand implements TelegramCommandInterface
+#[AsTelegramCommand('/ban')]
+final class StartBanCommand extends AbstractTelegramCommand
 {
 }

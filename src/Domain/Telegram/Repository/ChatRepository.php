@@ -11,7 +11,7 @@ use Doctrine\Persistence\ManagerRegistry;
 /**
  * @extends ServiceEntityRepository<TelegramChatEntity>
  */
-class ChatRepository extends ServiceEntityRepository
+final class ChatRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
@@ -39,6 +39,11 @@ class ChatRepository extends ServiceEntityRepository
         $chat->isEnabled = false;
 
         return $chat;
+    }
+
+    public function clear(): void
+    {
+        $this->getEntityManager()->clear();
     }
 
     public function flush(): void

@@ -5,8 +5,8 @@ COPY --from=composer /usr/bin/composer /usr/bin/composer
 
 ARG APP_PORT
 ARG TIMEZONE
-ARG UID
-ARG GID
+ARG UID=1000
+ARG GID=1000
 
 RUN <<EOF
   set -xe
@@ -42,11 +42,10 @@ RUN pecl install amqp
 RUN docker-php-ext-enable igbinary memcached amqp
 
 COPY --link conf.d/app.ini $PHP_INI_DIR/conf.d/
-RUN sed -i "s/pm.max_children = 5/pm.max_children = 200/" /usr/local/etc/php-fpm.d/www.conf \
-    && sed -i "s/pm = dynamic/pm = static/" /usr/local/etc/php-fpm.d/www.conf \
-    && sed -i "s/pm.start_servers = 2/;pm.start_servers = 2/" /usr/local/etc/php-fpm.d/www.conf \
-    && sed -i "s/pm.min_spare_servers = 1/;pm.min_spare_servers = 1/" /usr/local/etc/php-fpm.d/www.conf \
-    && sed -i "s/pm.max_spare_servers = 3/;pm.max_spare_servers = 3/" /usr/local/etc/php-fpm.d/www.conf \
+RUN sed -i "s/pm.max_children = 5/pm.max_children = 20/" /usr/local/etc/php-fpm.d/www.conf \
+    && sed -i "s/pm.start_servers = 2/pm.start_servers = 5/" /usr/local/etc/php-fpm.d/www.conf \
+    && sed -i "s/pm.min_spare_servers = 1/pm.min_spare_servers = 2/" /usr/local/etc/php-fpm.d/www.conf \
+    && sed -i "s/pm.max_spare_servers = 3/pm.max_spare_servers = 8/" /usr/local/etc/php-fpm.d/www.conf \
     && sed -i "s/;error_log = log\/php-fpm.log/error_log = \/var\/log\/php-fpm.log/" /usr/local/etc/php-fpm.conf \
     && sed -i "s/;emergency_restart_threshold = 0/emergency_restart_threshold = 32/" /usr/local/etc/php-fpm.conf \
     && sed -i "s/;emergency_restart_interval = 0/emergency_restart_interval = 1m/" /usr/local/etc/php-fpm.conf \
@@ -104,6 +103,7 @@ RUN mkdir -p /var/www/app/public/phpca \
 
 FROM php_dev AS php_dev_supervisor
 
+USER root
 RUN apt-get update && apt-get install -y supervisor
 
 USER www-data
@@ -117,7 +117,6 @@ CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/conf.d/supervisord.con
 FROM php_prod AS php_prod_supervisor
 
 USER root
-
 RUN apt-get update && apt-get install -y supervisor
 
 USER www-data

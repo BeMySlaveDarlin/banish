@@ -10,18 +10,18 @@ use App\Domain\Telegram\Command\TelegramHandlerInterface;
 use App\Domain\Telegram\Constants\Messages;
 use App\Domain\Telegram\Repository\BanRepository;
 use App\Domain\Telegram\Repository\VoteRepository;
-use App\Domain\Telegram\Service\BanService;
+use App\Domain\Telegram\Service\BanProcessServiceInterface;
 use App\Domain\Telegram\Service\ChatConfigServiceInterface;
-use App\Domain\Telegram\Service\VoteService;
+use App\Infrastructure\Telegram\Attribute\AsTelegramHandler;
 
-class RemoveReactionHandler implements TelegramHandlerInterface
+#[AsTelegramHandler(ReactionRemovedCommand::class)]
+final readonly class RemoveReactionHandler implements TelegramHandlerInterface
 {
     public function __construct(
-        private readonly BanRepository $banRepository,
-        private readonly VoteRepository $voteRepository,
-        private readonly VoteService $voteService,
-        private readonly BanService $banService,
-        private readonly ChatConfigServiceInterface $chatConfigService
+        private BanRepository $banRepository,
+        private VoteRepository $voteRepository,
+        private BanProcessServiceInterface $banProcessService,
+        private ChatConfigServiceInterface $chatConfigService
     ) {
     }
 
@@ -64,11 +64,7 @@ class RemoveReactionHandler implements TelegramHandlerInterface
         $vote = $this->voteRepository->findByUserAndBan($command->user, $ban);
         if ($vote) {
             $this->voteRepository->delete($vote);
-
-            $voteResult = $this->voteService->getVoteResult($command->chat, $ban);
-            if ($voteResult['shouldForgive']) {
-                $this->banService->forgiveBan($ban);
-            }
+            $this->banProcessService->checkAndExecuteVerdict($command->chat, $ban);
         }
 
         return Messages::MESSAGE_BAN_STARTED;

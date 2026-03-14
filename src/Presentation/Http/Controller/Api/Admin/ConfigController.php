@@ -18,16 +18,16 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
-class ConfigController extends AbstractAdminController
+final class ConfigController extends AbstractAdminController
 {
     public function __construct(
-        protected ChatRepository $chatRepository,
         protected ChatConfigServiceInterface $configService,
-        protected UserRepository $userRepository,
         protected AdminActionLogService $logService,
+        UserRepository $userRepository,
+        ChatRepository $chatRepository,
         AdminSessionService $sessionService,
     ) {
-        parent::__construct($sessionService);
+        parent::__construct($sessionService, $userRepository, $chatRepository);
     }
 
     public function getAction(
@@ -72,6 +72,12 @@ class ConfigController extends AbstractAdminController
 
         /** @var array<string, mixed> $data */
         $data = \json_decode($request->getContent(), true, 512, JSON_THROW_ON_ERROR) ?? [];
+
+        $validationErrors = $this->validateConfigData($data);
+        if (!empty($validationErrors)) {
+            return $this->json(['error' => 'Validation failed', 'errors' => $validationErrors], 400);
+        }
+
         $changedFields = [];
 
         $this->ensureAllDefaultOptionsExist($chat);
@@ -135,6 +141,41 @@ class ConfigController extends AbstractAdminController
         return $response;
     }
 
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, string>
+     */
+    private function validateConfigData(array $data): array
+    {
+        $errors = [];
+
+        if (isset($data['votesRequired'])) {
+            if (!is_int($data['votesRequired']) || $data['votesRequired'] < 2) {
+                $errors['votesRequired'] = 'votesRequired must be an integer >= 2';
+            }
+        }
+
+        if (isset($data['minMessagesForTrust'])) {
+            if (!is_int($data['minMessagesForTrust']) || $data['minMessagesForTrust'] < 1) {
+                $errors['minMessagesForTrust'] = 'minMessagesForTrust must be an integer >= 1';
+            }
+        }
+
+        if (isset($data['banEmoji'])) {
+            if (!is_string($data['banEmoji']) || trim($data['banEmoji']) === '') {
+                $errors['banEmoji'] = 'banEmoji must be a non-empty string';
+            }
+        }
+
+        if (isset($data['forgiveEmoji'])) {
+            if (!is_string($data['forgiveEmoji']) || trim($data['forgiveEmoji']) === '') {
+                $errors['forgiveEmoji'] = 'forgiveEmoji must be a non-empty string';
+            }
+        }
+
+        return $errors;
+    }
+
     private function ensureAllDefaultOptionsExist(TelegramChatEntity $chat): void
     {
         $defaultOptions = [
@@ -149,9 +190,7 @@ class ConfigController extends AbstractAdminController
 
         $needsSave = false;
         foreach ($defaultOptions as $option => $defaultValue) {
-            try {
-                $chat->getOption($option);
-            } catch (\Throwable) {
+            if ($chat->getOption($option) === null) {
                 $chat->setOption($option, $defaultValue);
                 $needsSave = true;
             }

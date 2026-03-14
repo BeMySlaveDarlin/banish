@@ -11,7 +11,7 @@ use Doctrine\Persistence\ManagerRegistry;
 /**
  * @extends ServiceEntityRepository<ScheduleRuleEntity>
  */
-class ScheduleRuleRepository extends ServiceEntityRepository
+final class ScheduleRuleRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {

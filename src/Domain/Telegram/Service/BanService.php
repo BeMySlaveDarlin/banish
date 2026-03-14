@@ -6,30 +6,45 @@ namespace App\Domain\Telegram\Service;
 
 use App\Domain\Telegram\Entity\TelegramChatEntity;
 use App\Domain\Telegram\Entity\TelegramChatUserBanEntity;
-use App\Domain\Telegram\Enum\BanStatus;
 use App\Domain\Telegram\Repository\BanRepository;
 use App\Domain\Telegram\Repository\RequestHistoryRepository;
+use App\Domain\Telegram\Repository\VoteRepository;
+use Doctrine\ORM\OptimisticLockException;
 use Psr\Log\LoggerInterface;
 
-class BanService
+final readonly class BanService implements BanServiceInterface
 {
     public function __construct(
-        private readonly BanRepository $banRepository,
-        private readonly ChatConfigServiceInterface $chatConfigService,
-        private readonly TelegramApiService $telegramApiService,
-        private readonly RequestHistoryRepository $requestHistoryRepository,
-        private readonly LoggerInterface $logger
+        private BanRepository $banRepository,
+        private VoteRepository $voteRepository,
+        private ChatConfigServiceInterface $chatConfigService,
+        private TelegramChatMemberApiInterface $chatMemberApi,
+        private TelegramMessageApiInterface $messageApi,
+        private RequestHistoryRepository $requestHistoryRepository,
+        private LoggerInterface $logger
     ) {
     }
 
     public function banUser(TelegramChatEntity $chat, TelegramChatUserBanEntity $ban): void
     {
+        if (!$ban->isPending()) {
+            return;
+        }
+
         $deleteOnlyMessage = $this->chatConfigService->isDeleteOnlyEnabled($chat);
         if (!$deleteOnlyMessage) {
-            $ban->status = BanStatus::BANNED;
-            $this->telegramApiService->banChatMember($chat->chatId, $ban->spammerId);
+            $banned = $this->chatMemberApi->banChatMember($chat->chatId, $ban->spammerId);
+            if (!$banned) {
+                $this->logger->error('Failed to ban user via Telegram API', [
+                    'chatId' => $chat->chatId,
+                    'spammerId' => $ban->spammerId,
+                ]);
+
+                return;
+            }
+            $ban->markAsBanned();
         } else {
-            $ban->status = BanStatus::CANCELED;
+            $ban->markAsForgiven();
         }
 
         if ($this->chatConfigService->isDeleteMessagesEnabled($chat)) {
@@ -40,19 +55,42 @@ class BanService
             }
         }
 
-        $this->banRepository->save($ban);
+        try {
+            $this->banRepository->save($ban);
+        } catch (OptimisticLockException $e) {
+            $this->logger->warning('Optimistic lock conflict in banUser, skipping', [
+                'banId' => $ban->id,
+                'chatId' => $chat->chatId,
+                'spammerId' => $ban->spammerId,
+            ]);
+        }
     }
 
     public function forgiveBan(TelegramChatUserBanEntity $ban): void
     {
-        $ban->status = BanStatus::CANCELED;
+        $ban->markAsForgiven();
         $this->banRepository->save($ban);
+    }
+
+    /**
+     * @param array<int, TelegramChatUserBanEntity> $bans
+     */
+    public function adminUnban(int $chatId, int $userId, array $bans): void
+    {
+        $this->chatMemberApi->unbanChatMember($chatId, $userId);
+
+        foreach ($bans as $ban) {
+            $this->voteRepository->deleteByBan($ban, flush: false);
+            $this->banRepository->remove($ban, flush: false);
+        }
+        $this->voteRepository->flush();
+        $this->banRepository->flush();
     }
 
     private function deleteMessage(int $chatId, int $messageId): void
     {
         try {
-            $this->telegramApiService->deleteMessage((int) $chatId, (int) $messageId);
+            $this->messageApi->deleteMessage((int) $chatId, (int) $messageId);
         } catch (\Throwable $e) {
             $this->logger->warning('Failed to delete spam message', [
                 'chatId' => $chatId,

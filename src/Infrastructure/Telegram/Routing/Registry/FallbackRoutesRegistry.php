@@ -18,4 +18,9 @@ final readonly class FallbackRoutesRegistry implements RouteRegistryInterface
     {
         return UnsupportedCommand::class;
     }
+
+    public static function getPriority(): int
+    {
+        return -100;
+    }
 }

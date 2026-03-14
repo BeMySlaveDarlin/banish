@@ -7,6 +7,7 @@ namespace App\Infrastructure\Doctrine\Type;
 use Doctrine\DBAL\Exception;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Types\ConversionException;
+use App\Domain\Common\ValueObject\JsonBValue;
 use Doctrine\DBAL\Types\Type;
 use JsonException;
 

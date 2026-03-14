@@ -1,0 +1,26 @@
+framework:
+    rate_limiter:
+        webhook:
+            policy: 'token_bucket'
+            limit: 60
+            rate: { interval: '1 second', amount: 60 }
+            lock_factory: 'lock.factory'
+            cache_pool: 'cache.app'
+        admin_login:
+            policy: 'fixed_window'
+            limit: 5
+            interval: '1 minute'
+            lock_factory: 'lock.factory'
+            cache_pool: 'cache.app'
+        ban_initiation:
+            policy: 'fixed_window'
+            limit: 3
+            interval: '1 minute'
+            lock_factory: 'lock.factory'
+            cache_pool: 'cache.app'
+        voting:
+            policy: 'fixed_window'
+            limit: 10
+            interval: '1 minute'
+            lock_factory: 'lock.factory'
+            cache_pool: 'cache.app'

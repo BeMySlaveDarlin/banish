@@ -1,0 +1,10 @@
+.git
+.claude
+.idea
+var/cache
+var/log
+node_modules
+tests
+*.md
+.env.local
+.env.test

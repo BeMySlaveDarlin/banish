@@ -20,4 +20,10 @@ FROM node_base AS node_prod
 
 RUN npm run build
 
+# NOTE: Sleep loop is required because docker-compose uses a shared volume
+# (frontend_dist) to pass built assets to the nginx container.
+# The container must stay alive to keep the volume mounted.
+# A better approach would be to COPY --from the build stage directly into
+# the nginx image via a multi-stage build, but that requires changes to
+# the nginx Dockerfile and docker-compose architecture.
 CMD ["sh", "-c", "while true; do sleep 3600; done"]

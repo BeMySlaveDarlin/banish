@@ -23,11 +23,6 @@ final class CookieAuthenticator extends AbstractAuthenticator
     ) {
     }
 
-    /**
-     * @param Request $request
-     *
-     * @return bool|null
-     */
     public function supports(Request $request): ?bool
     {
         return $request->cookies->has('token');
@@ -43,7 +38,7 @@ final class CookieAuthenticator extends AbstractAuthenticator
 
         return new Passport(
             new UserBadge($token, function ($token) {
-                return $this->sessionRepository->find($token);
+                return $this->sessionRepository->findValidSession($token);
             }),
             new CustomCredentials(
                 function ($credentials, $session) {

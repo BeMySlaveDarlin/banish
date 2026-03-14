@@ -2,21 +2,117 @@ name: Build & Test
 
 on:
   push:
-    branches: [ master, main, develop ]
+    branches: [master, main, develop]
   pull_request:
-    branches: [ master, main, develop ]
+    branches: [master, main, develop]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  APP_ENV: test
+  APP_SECRET: ci_test_secret_not_real
+  DATABASE_URL: "postgresql://banish:banish@localhost:5432/banish?serverVersion=15&charset=utf8"
+  MESSENGER_TRANSPORT_DSN: "in-memory://"
+  MESSENGER_FAILED_DSN: "in-memory://"
+  MESSENGER_SCHEDULER_PARTITIONS_DSN: "in-memory://"
+  MESSENGER_SCHEDULER_CLEAR_BOT_MESSAGES_DSN: "in-memory://"
+  MEMCACHED_DSN: "memcached://localhost:11211"
+  TELEGRAM_API_URL: "https://api.telegram.org/bot"
+  TELEGRAM_BOT_NAME: "ci_test_bot"
+  TELEGRAM_BOT_TOKEN: "ci-test-token-000"
+  TELEGRAM_MIN_MESSAGES_FOR_TRUST: "3"
+  APP_ADMIN_PASSWORD: "CiTestPassword123"
+  ADMIN_PANEL_BASE_URL: "http://localhost"
 
 jobs:
-  build:
+  backend-build:
+    name: Backend Build
     runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_pgsql, json, bcmath, curl, intl, memcached
+          coverage: none
+          tools: composer:v2
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Setup .env
+        run: cp .env.example .env
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Validate Symfony container
+        run: php bin/console lint:container --env=test
+
+      - name: Warm up cache
+        run: php bin/console cache:warmup --env=test
+
+  backend-quality:
+    name: Backend Quality
+    runs-on: ubuntu-latest
+    needs: backend-build
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_pgsql, json, bcmath, curl, intl, memcached
+          coverage: none
+          tools: composer:v2
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Setup .env
+        run: cp .env.example .env
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Run PHPStan
+        run: vendor/bin/phpstan analyse --level 9 --memory-limit=2G
+
+      - name: Run PHPCS
+        run: vendor/bin/phpcs src/
+
+  backend-test:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    needs: backend-build
 
     services:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_USER: user
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: app
+          POSTGRES_USER: banish
+          POSTGRES_PASSWORD: banish
+          POSTGRES_DB: banish
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -25,42 +121,137 @@ jobs:
         ports:
           - 5432:5432
 
+      memcached:
+        image: memcached:1.6-alpine
+        ports:
+          - 11211:11211
+
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
-          extensions: pdo_pgsql, json, bcmath, curl
+          php-version: "8.3"
+          extensions: pdo_pgsql, json, bcmath, curl, intl, memcached
           coverage: none
-
-      - name: Setup .env
-        run: cp .env.example .env
+          tools: composer:v2
 
       - name: Get Composer cache directory
         id: composer-cache
         run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
 
       - name: Cache Composer dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-
 
+      - name: Setup .env
+        run: |
+          cp .env.example .env
+          cat > .env.test <<'ENVEOF'
+          APP_ENV=test
+          APP_SECRET=ci_test_secret
+          APP_DEBUG=0
+          DATABASE_URL="postgresql://banish:banish@localhost:5432/banish?serverVersion=15&charset=utf8"
+          MESSENGER_TRANSPORT_DSN=in-memory://
+          MESSENGER_FAILED_DSN=in-memory://
+          MESSENGER_SCHEDULER_PARTITIONS_DSN=in-memory://
+          MESSENGER_SCHEDULER_CLEAR_BOT_MESSAGES_DSN=in-memory://
+          MEMCACHED_DSN="memcached://localhost:11211"
+          TELEGRAM_API_URL=https://api.telegram.org/bot
+          TELEGRAM_BOT_NAME=ci_test_bot
+          TELEGRAM_BOT_TOKEN=ci-test-token-000
+          TELEGRAM_MIN_MESSAGES_FOR_TRUST=3
+          APP_ADMIN_PASSWORD=CiTestPassword123
+          ADMIN_PANEL_BASE_URL=http://localhost
+          ENVEOF
+          sed -i 's/^          //' .env.test
+
       - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist
+        run: composer install --no-interaction --prefer-dist --no-progress
 
-      - name: Run PHPStan
-        run: vendor/bin/phpstan analyse --level 9 --memory-limit=2G
-        continue-on-error: true
+      - name: Create test database
+        run: php bin/console doctrine:database:create --env=test --if-not-exists
 
-      - name: Run PHPCS
-        run: vendor/bin/phpcs src/
-        continue-on-error: true
+      - name: Run database migrations
+        run: php bin/console doctrine:migrations:migrate --no-interaction --env=test
 
-      - name: Check services compilation
-        run: php bin/console cache:clear --no-warmup
-        env:
-          APP_ENV: test
+      - name: Run PHPUnit
+        run: vendor/bin/phpunit --colors=always
+
+  frontend-build:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+  frontend-quality:
+    name: Frontend Quality
+    runs-on: ubuntu-latest
+    needs: frontend-build
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+  frontend-test:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    needs: frontend-build
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test

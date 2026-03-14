@@ -12,16 +12,16 @@ use App\Domain\Telegram\Repository\VoteRepository;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 
-class InfoController extends AbstractAdminController
+final class InfoController extends AbstractAdminController
 {
     public function __construct(
-        protected ChatRepository $chatRepository,
         protected BanRepository $banRepository,
         protected VoteRepository $voteRepository,
-        protected UserRepo $userRepository,
+        UserRepo $userRepository,
+        ChatRepository $chatRepository,
         AdminSessionService $sessionService,
     ) {
-        parent::__construct($sessionService);
+        parent::__construct($sessionService, $userRepository, $chatRepository);
     }
 
     public function getAction(int $chatId, Request $request): JsonResponse
@@ -46,7 +46,7 @@ class InfoController extends AbstractAdminController
             return [
                 'id' => $ban->id,
                 'spammerId' => $ban->spammerId,
-                'status' => $ban->status->value,
+                'status' => $ban->getStatus()->value,
                 'createdAt' => $ban->createdAt->format('Y-m-d H:i:s'),
             ];
         }, $recentBans);

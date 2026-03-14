@@ -11,14 +11,15 @@ use App\Domain\Telegram\Constants\Messages;
 use App\Domain\Telegram\Entity\TelegramChatUserEntity;
 use App\Domain\Telegram\Enum\VoteType;
 use App\Domain\Telegram\Repository\BanRepository;
-use App\Domain\Telegram\Repository\UserRepository;
-use App\Domain\Telegram\Repository\VoteRepository;
-use App\Domain\Telegram\Service\BanMessageFormatter;
+use App\Domain\Telegram\Service\BanMessageFormatterInterface;
+use App\Domain\Telegram\Service\BanProcessServiceInterface;
+use App\Infrastructure\Telegram\Attribute\AsTelegramHandler;
 use App\Domain\Telegram\Service\ChatConfigServiceInterface;
-use App\Domain\Telegram\Service\SpammerMessageService;
-use App\Domain\Telegram\Service\TelegramApiService;
-use App\Domain\Telegram\Service\TrustService;
-use App\Domain\Telegram\Service\UserPersister;
+use App\Domain\Telegram\Service\SpammerMessageServiceInterface;
+use App\Domain\Telegram\Service\TelegramChatMemberApiInterface;
+use App\Domain\Telegram\Service\TelegramMessageApiInterface;
+use App\Domain\Telegram\Service\TrustServiceInterface;
+use App\Domain\Telegram\Service\UserPersisterInterface;
 use App\Domain\Telegram\ValueObject\Bot\TelegramInlineKeyboard;
 use App\Domain\Telegram\ValueObject\Bot\TelegramReplyMarkup;
 use App\Domain\Telegram\ValueObject\Bot\TelegramSendMessage;
@@ -26,19 +27,20 @@ use App\Domain\Telegram\ValueObject\TelegramMessage;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
-class StartBanHandler implements TelegramHandlerInterface
+#[AsTelegramHandler(StartBanCommand::class)]
+final readonly class StartBanHandler implements TelegramHandlerInterface
 {
     public function __construct(
-        private readonly BanRepository $banRepository,
-        private readonly VoteRepository $voteRepository,
-        private readonly UserRepository $userRepository,
-        private readonly TelegramApiService $telegramApiService,
-        private readonly SpammerMessageService $spammerMessageService,
-        private readonly TrustService $trustService,
-        private readonly ChatConfigServiceInterface $chatConfigService,
-        private readonly BanMessageFormatter $messageFormatter,
-        private readonly UserPersister $userPersister,
-        private readonly LoggerInterface $logger
+        private BanRepository $banRepository,
+        private BanProcessServiceInterface $banProcessService,
+        private TelegramChatMemberApiInterface $chatMemberApi,
+        private TelegramMessageApiInterface $messageApi,
+        private SpammerMessageServiceInterface $spammerMessageService,
+        private TrustServiceInterface $trustService,
+        private ChatConfigServiceInterface $chatConfigService,
+        private BanMessageFormatterInterface $messageFormatter,
+        private UserPersisterInterface $userPersister,
+        private LoggerInterface $logger
     ) {
     }
 
@@ -67,13 +69,17 @@ class StartBanHandler implements TelegramHandlerInterface
             return Messages::MESSAGE_SPAM_404;
         }
 
-        $chatSpammer = $this->telegramApiService->getChatMember(
+        $chatSpammer = $this->chatMemberApi->getChatMember(
             $spammerMessage->chat->id,
             $spammerMessage->from->id
         );
 
         if (!$chatSpammer || $chatSpammer->isAdmin()) {
             return Messages::MESSAGE_ADMIN_IS_IMMUNE;
+        }
+
+        if ($command->user->userId === $spammerMessage->from->id) {
+            return Messages::MESSAGE_NOT_SUPPORTED;
         }
 
         if ($chatSpammer->user->id && $this->trustService->isUserTrusted($command->chat, $chatSpammer->user->id)) {
@@ -104,35 +110,15 @@ class StartBanHandler implements TelegramHandlerInterface
             return Messages::MESSAGE_BAN_API_ERROR;
         }
 
-        $ban = $this->banRepository->findByReporterAndMessage(
-            $command->chat->chatId,
-            $command->user->userId,
-            $banMessage->message_id
-        );
-
-        if ($ban === null && $banMessage->message_id !== null && $spammerMessage->from->id !== null) {
-            $ban = $this->banRepository->createBan(
-                $command->chat->chatId,
-                $command->user->userId,
+        if ($banMessage->message_id !== null && $spammerMessage->from->id !== null) {
+            $this->banProcessService->initiateBan(
+                $command->chat,
+                $command->user,
                 $spammerMessage->from->id,
                 $banMessage->message_id,
                 $spammerMessage->message_id,
                 $command->update->getMessageObj()->message_id ?? 0
             );
-            $this->banRepository->save($ban);
-        }
-
-        if ($ban !== null && $command->user !== null) {
-            $vote = $this->voteRepository->findByUserAndBan($command->user, $ban);
-            if ($vote === null) {
-                $vote = $this->voteRepository->createVote(
-                    $command->user,
-                    $ban,
-                    $command->chat->chatId,
-                    VoteType::BAN
-                );
-                $this->voteRepository->save($vote);
-            }
         }
 
         return Messages::MESSAGE_BAN_STARTED;
@@ -178,6 +164,6 @@ class StartBanHandler implements TelegramHandlerInterface
         $replyMarkup->inline_keyboard = $keyboard;
         $message->reply_markup = $replyMarkup;
 
-        return $this->telegramApiService->sendMessage($message);
+        return $this->messageApi->sendMessage($message);
     }
 }

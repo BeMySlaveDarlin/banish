@@ -9,8 +9,10 @@ use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
-class PartitionService
+final class PartitionService
 {
+    private const string TABLE_NAME_PATTERN = '/^[a-z_]+$/';
+
     public function __construct(
         private readonly Connection $connection,
         private readonly ParameterBagInterface $parameters
@@ -28,6 +30,9 @@ class PartitionService
             return;
         }
         foreach ($tables as $table => $params) {
+            if (!is_string($table) || !$this->isValidTableName($table)) {
+                continue;
+            }
             if (!$this->isTableExists($table)) {
                 continue;
             }
@@ -40,6 +45,11 @@ class PartitionService
             }
             $this->addPartition($table, $nextMonth);
         }
+    }
+
+    private function isValidTableName(string $table): bool
+    {
+        return (bool) preg_match(self::TABLE_NAME_PATTERN, $table);
     }
 
     private function dropPartition(string $table, DateTimeImmutable $now, DateTimeImmutable $prevMonth): void
@@ -61,15 +71,15 @@ class PartitionService
         $monthNum = $date->format('m');
         $yearNum = $date->format('Y');
         $finish = $date->add(new DateInterval('P1M'))->format('Y-m-01');
-        $sql = "CREATE TABLE IF NOT EXISTS partitions.{$table}_y{$yearNum}m{$monthNum} 
+        $sql = "CREATE TABLE IF NOT EXISTS partitions.{$table}_y{$yearNum}m{$monthNum}
                 PARTITION OF public.{$table} FOR VALUES FROM ('{$start}') TO ('{$finish}');";
         $this->connection->executeStatement($sql);
     }
 
     private function isTableExists(string $table): bool
     {
-        $query = "SELECT 1 FROM information_schema.tables WHERE table_name = '$table' AND table_type = 'BASE TABLE'";
+        $query = "SELECT 1 FROM information_schema.tables WHERE table_name = :table AND table_type = 'BASE TABLE'";
 
-        return (bool) $this->connection->executeQuery($query)->fetchOne();
+        return (bool) $this->connection->executeQuery($query, ['table' => $table])->fetchOne();
     }
 }

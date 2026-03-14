@@ -61,7 +61,7 @@ class AdminSessionEntity implements UserInterface
 
     public function getRoles(): array
     {
-        return ['ROLE_USER'];
+        return ['ROLE_USER', 'ROLE_ADMIN'];
     }
 
     public function eraseCredentials(): void

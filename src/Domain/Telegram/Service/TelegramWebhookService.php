@@ -4,34 +4,36 @@ declare(strict_types=1);
 
 namespace App\Domain\Telegram\Service;
 
-class TelegramWebhookService
+final readonly class TelegramWebhookService
 {
+    private const int API_DELAY_MICROSECONDS = 50000;
+
     public function __construct(
-        private readonly TelegramApiService $telegramApiService
+        private TelegramWebhookApiInterface $webhookApi
     ) {
     }
 
     public function clearUpdates(): void
     {
-        $webhookInfo = $this->telegramApiService->getWebhookInfo();
-        $isDeleted = $this->telegramApiService->deleteWebhook();
+        $webhookInfo = $this->webhookApi->getWebhookInfo();
+        $isDeleted = $this->webhookApi->deleteWebhook();
 
-        usleep(50000);
+        usleep(self::API_DELAY_MICROSECONDS);
         if ($isDeleted) {
-            $updates = $this->telegramApiService->getUpdates();
+            $updates = $this->webhookApi->getUpdates();
             if (!empty($updates)) {
                 /** @var array<string, mixed> $lastUpdate */
                 $lastUpdate = array_pop($updates);
                 /** @var int|string|null $rawUpdateId */
                 $rawUpdateId = $lastUpdate['update_id'] ?? 0;
                 $updateId = is_int($rawUpdateId) ? $rawUpdateId : (int) $rawUpdateId;
-                $this->telegramApiService->getUpdates(['offset' => $updateId + 1]);
+                $this->webhookApi->getUpdates(['offset' => $updateId + 1]);
             }
         }
 
-        usleep(50000);
+        usleep(self::API_DELAY_MICROSECONDS);
         if ($webhookInfo && !empty($webhookInfo->url)) {
-            $this->telegramApiService->setWebhook($webhookInfo->url);
+            $this->webhookApi->setWebhook($webhookInfo->url);
         }
     }
 }

@@ -10,6 +10,11 @@ framework:
         transports:
             async:
                 dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                retry_strategy:
+                    max_retries: 2
+                    delay: 1000
+                    multiplier: 2
+                    max_delay: 10000
             sync: 'in-memory://'
             failed:
                 dsn: '%env(MESSENGER_FAILED_DSN)%'
@@ -22,3 +27,11 @@ framework:
             'App\Application\Message\TelegramUpdateMessage': async
             'App\Infrastructure\Scheduler\Common\RefreshDbPartitionsMessage': scheduler_partitions
             'App\Infrastructure\Scheduler\Telegram\ClearBotMessagesMessage': scheduler_clear_bot_messages
+
+when@test:
+    framework:
+        messenger:
+            transports:
+                async: 'sync://'
+            routing:
+                'App\Application\Message\TelegramUpdateMessage': async

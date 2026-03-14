@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Telegram\Entity;
 
 use App\Domain\Telegram\Enum\BanStatus;
+use App\Domain\Telegram\Exception\InvalidBanStateTransitionException;
 use App\Domain\Telegram\Repository\BanRepository;
 use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -19,6 +22,7 @@ use Doctrine\ORM\Mapping\PrePersist;
 use Doctrine\ORM\Mapping\PreUpdate;
 use Doctrine\ORM\Mapping\SequenceGenerator;
 use Doctrine\ORM\Mapping\Table;
+use Doctrine\ORM\Mapping\Version;
 
 #[Entity(repositoryClass: BanRepository::class)]
 #[Table(name: '`telegram_chats_users_bans`')]
@@ -54,17 +58,21 @@ class TelegramChatUserBanEntity
     #[Column(name: 'spammer_user_id', type: Types::BIGINT, length: 255)]
     public int $spammerId;
 
-    #[Column(name: 'reporter_user_id', type: Types::BIGINT, length: 255, nullable: true)]
+    #[Column(name: 'reporter_user_id', type: Types::BIGINT, length: 255)]
     public int $reporterId;
 
     #[Column(type: Types::STRING, enumType: BanStatus::class)]
-    public BanStatus $status;
+    private BanStatus $status;
 
     #[Column(name: 'created_at', type: Types::DATETIME_IMMUTABLE, options: ["default" => "CURRENT_TIMESTAMP"])]
     public DateTimeImmutable $createdAt;
 
     #[Column(name: 'updated_at', type: Types::DATETIME_IMMUTABLE, options: ["default" => "CURRENT_TIMESTAMP"])]
     public DateTimeImmutable $updatedAt;
+
+    #[Version]
+    #[Column(type: Types::INTEGER, options: ["default" => 1])]
+    public int $version = 1;
 
     /**
      * @var ArrayCollection<int, TelegramChatUserBanVoteEntity> | Collection<int, TelegramChatUserBanVoteEntity> | array<int, TelegramChatUserBanVoteEntity>
@@ -75,6 +83,26 @@ class TelegramChatUserBanEntity
     public function __construct()
     {
         $this->votes = new ArrayCollection();
+        $this->status = BanStatus::PENDING;
+    }
+
+    public static function create(
+        int $chatId,
+        int $reporterId,
+        int $spammerId,
+        int $banMessageId,
+        ?int $spamMessageId = null,
+        ?int $initialMessageId = null
+    ): self {
+        $ban = new self();
+        $ban->chatId = $chatId;
+        $ban->reporterId = $reporterId;
+        $ban->spammerId = $spammerId;
+        $ban->banMessageId = $banMessageId;
+        $ban->spamMessageId = $spamMessageId;
+        $ban->initialMessageId = $initialMessageId;
+
+        return $ban;
     }
 
     #[PrePersist]
@@ -89,6 +117,47 @@ class TelegramChatUserBanEntity
     public function onUpdate(): void
     {
         $this->updatedAt = new DateTimeImmutable();
+    }
+
+    public function getStatus(): BanStatus
+    {
+        return $this->status;
+    }
+
+    public function markAsBanned(): void
+    {
+        if ($this->status !== BanStatus::PENDING) {
+            throw InvalidBanStateTransitionException::create($this->status, BanStatus::BANNED);
+        }
+
+        $this->status = BanStatus::BANNED;
+    }
+
+    public function markAsForgiven(): void
+    {
+        if ($this->status !== BanStatus::PENDING) {
+            throw InvalidBanStateTransitionException::create($this->status, BanStatus::CANCELED);
+        }
+
+        $this->status = BanStatus::CANCELED;
+    }
+
+    public function markAsExpired(): void
+    {
+        if ($this->status !== BanStatus::PENDING) {
+            throw InvalidBanStateTransitionException::create($this->status, BanStatus::DELETED);
+        }
+
+        $this->status = BanStatus::DELETED;
+    }
+
+    public function markAsCleanedUp(): void
+    {
+        if ($this->status === BanStatus::DELETED) {
+            throw InvalidBanStateTransitionException::create($this->status, BanStatus::DELETED);
+        }
+
+        $this->status = BanStatus::DELETED;
     }
 
     public function isPending(): bool

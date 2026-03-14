@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Domain\Telegram\Service;
+namespace App\Infrastructure\Telegram\Service;
 
+use App\Domain\Telegram\Service\TelegramApiServiceInterface;
 use App\Domain\Telegram\ValueObject\Bot\TelegramChatMember;
 use App\Domain\Telegram\ValueObject\Bot\TelegramEditMessage;
 use App\Domain\Telegram\ValueObject\Bot\TelegramEditReplyMarkup;
@@ -18,7 +19,7 @@ use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Throwable;
 
-class TelegramApiService
+final class TelegramApiService implements TelegramApiServiceInterface
 {
     public const int JSON_OPTIONS = JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
     private const string ACTION_GET_CHAT_MEMBER = '/getChatMember';
@@ -81,7 +82,10 @@ class TelegramApiService
         $cacheItem = $this->cache->getItem($cacheKey);
 
         if ($cacheItem->isHit()) {
-            return $cacheItem->get();
+            /** @var TelegramChatMember|null $cached */
+            $cached = $cacheItem->get();
+
+            return $cached;
         }
 
         $result = $this->send(self::ACTION_GET_CHAT_MEMBER, ['chat_id' => $chatId, 'user_id' => $userId]);
@@ -293,8 +297,7 @@ class TelegramApiService
             if (!in_array($response->getStatusCode(), [200, 201, 204], true)) {
                 $this->logger->warning('Telegram API request failed', [
                     'action' => $action,
-                    'params' => $params,
-                    'error' => $response->getContent(false),
+                    'status_code' => $response->getStatusCode(),
                 ]);
 
                 return null;
@@ -317,17 +320,14 @@ class TelegramApiService
                 throw new BadRequestException($errorMsg);
             }
 
-            $this->logger->info('Telegram API request sent', [
+            $this->logger->debug('Telegram API request sent', [
                 'action' => $action,
-                'params' => $params,
-                'response' => $json,
             ]);
 
             return json_encode($json['result'] ?? '', self::JSON_OPTIONS);
         } catch (Throwable $throwable) {
             $this->logger->warning('Telegram API request failed', [
                 'action' => $action,
-                'params' => $params,
                 'error' => $throwable->getMessage(),
             ]);
 

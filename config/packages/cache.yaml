@@ -6,3 +6,11 @@ framework:
             cache.telegram:
                 adapter: cache.adapter.memcached
                 default_lifetime: 3600
+
+when@test:
+    framework:
+        cache:
+            app: cache.adapter.array
+            pools:
+                cache.telegram:
+                    adapter: cache.adapter.array

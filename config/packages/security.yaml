@@ -4,10 +4,9 @@ security:
         Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
-      # users_in_memory: { memory: null }
       session_user_provider:
         entity:
-          class: App\Account\Persistence\Entity\User
+          class: App\Domain\Admin\Entity\AdminSessionEntity
           property: id
     firewalls:
         dev:

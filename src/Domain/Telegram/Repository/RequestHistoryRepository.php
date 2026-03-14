@@ -13,7 +13,7 @@ use Doctrine\Persistence\ManagerRegistry;
 /**
  * @extends ServiceEntityRepository<TelegramRequestHistoryEntity>
  */
-class RequestHistoryRepository extends ServiceEntityRepository
+final class RequestHistoryRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
@@ -55,6 +55,7 @@ class RequestHistoryRepository extends ServiceEntityRepository
             ->select('COUNT(h.id)')
             ->where('h.chatId = :chatId')
             ->andWhere('h.fromId = :fromId')
+            ->andWhere('h.deletedAt IS NULL')
             ->setParameter('chatId', $chatId)
             ->setParameter('fromId', $fromId)
             ->getQuery()

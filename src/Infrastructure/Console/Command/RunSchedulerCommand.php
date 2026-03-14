@@ -7,6 +7,7 @@ namespace App\Infrastructure\Console\Command;
 use App\Domain\Common\Entity\ScheduleRuleEntity;
 use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
+use App\Infrastructure\Scheduler\SchedulerMessageFactory;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -18,7 +19,7 @@ use Symfony\Component\Messenger\MessageBusInterface;
     name: 'scheduler:run',
     description: 'Run scheduler and dispatch due messages to message bus',
 )]
-class RunSchedulerCommand extends Command
+final class RunSchedulerCommand extends Command
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
@@ -48,12 +49,7 @@ class RunSchedulerCommand extends Command
                             try {
                                 $messageClass = $rule->message;
                                 $options = $rule->options?->toArray() ?? ['data' => null];
-
-                                if (empty($options) || empty($options['data'])) {
-                                    $message = new $messageClass();
-                                } else {
-                                    $message = new $messageClass(...$options);
-                                }
+                                $message = SchedulerMessageFactory::create($messageClass, $options);
 
                                 $this->messageBus->dispatch($message);
                                 $this->logger->info(

@@ -18,4 +18,9 @@ final readonly class PrivateChatRoutesRegistry implements RouteRegistryInterface
     {
         return HelpCommand::class;
     }
+
+    public static function getPriority(): int
+    {
+        return 30;
+    }
 }

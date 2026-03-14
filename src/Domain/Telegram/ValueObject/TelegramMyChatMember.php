@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Telegram\ValueObject;
 
-class TelegramMyChatMember
+final class TelegramMyChatMember
 {
     public int $date;
     /** @var array<string, mixed>|null */

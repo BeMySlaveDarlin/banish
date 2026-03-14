@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Infrastructure\Doctrine\Type;
+namespace App\Domain\Common\ValueObject;
 
 use JsonException;
 use JsonSerializable;

@@ -8,12 +8,12 @@ use App\Domain\Telegram\Constants\ChatDefaults;
 use App\Domain\Telegram\Constants\Emoji;
 use App\Domain\Telegram\Entity\TelegramChatEntity;
 use App\Domain\Telegram\Repository\ChatRepository;
-use App\Infrastructure\Doctrine\Type\JsonBValue;
+use App\Domain\Common\ValueObject\JsonBValue;
 
-class ChatConfigService implements ChatConfigServiceInterface
+final readonly class ChatConfigService implements ChatConfigServiceInterface
 {
     public function __construct(
-        private readonly ChatRepository $chatRepository
+        private ChatRepository $chatRepository
     ) {
     }
 

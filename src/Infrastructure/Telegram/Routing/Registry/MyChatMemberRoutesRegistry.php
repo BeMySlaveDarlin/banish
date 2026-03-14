@@ -18,4 +18,9 @@ final readonly class MyChatMemberRoutesRegistry implements RouteRegistryInterfac
     {
         return MyChatMemberCommand::class;
     }
+
+    public static function getPriority(): int
+    {
+        return 50;
+    }
 }

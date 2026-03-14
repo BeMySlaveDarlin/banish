@@ -18,4 +18,9 @@ final readonly class CallbackQueryRoutesRegistry implements RouteRegistryInterfa
     {
         return VoteForBanCommand::class;
     }
+
+    public static function getPriority(): int
+    {
+        return 70;
+    }
 }

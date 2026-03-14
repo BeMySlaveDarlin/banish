@@ -6,7 +6,7 @@ namespace App\Domain\Telegram\ValueObject\Bot;
 
 use JsonSerializable;
 
-class TelegramInlineKeyboard implements JsonSerializable
+final class TelegramInlineKeyboard implements JsonSerializable
 {
     /** @var array<int, array<string, string>> */
     public array $buttons = [];

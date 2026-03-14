@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Telegram\ValueObject;
 
-class TelegramMessageChat
+final class TelegramMessageChat
 {
     public ?int $id = null;
     public ?string $type = null;

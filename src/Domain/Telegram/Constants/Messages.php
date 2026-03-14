@@ -22,6 +22,7 @@ final class Messages
     public const string MESSAGE_USER_IS_TRUSTED = "User is trusted";
     public const string MESSAGE_SPAM_404 = "User ban procedure failed. Spam message not found";
     public const string MESSAGE_NOT_SUPPORTED = "Update type not supported";
+    public const string MESSAGE_SILENT_OK = "OK";
 
     public const string START_BAN_PATTERN = "%s requested ban procedure on spammer %s\n";
     public const string VOTE_BAN_PATTERN = "%s voted for %s\n";

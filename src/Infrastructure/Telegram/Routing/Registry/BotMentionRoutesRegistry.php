@@ -18,4 +18,9 @@ final readonly class BotMentionRoutesRegistry implements RouteRegistryInterface
     {
         return StartBanCommand::class;
     }
+
+    public static function getPriority(): int
+    {
+        return 60;
+    }
 }

@@ -38,8 +38,6 @@ services:
             - '../src/Application/Command/'
             - '../src/Infrastructure/Metrics/RequestMetrics.php'
 
-    Psr\Container\ContainerInterface: '@service_container'
-
     App\Application\Handler\:
         resource: '../src/Application/Handler'
         public: true
@@ -47,21 +45,63 @@ services:
     App\Infrastructure\Telegram\Routing\Router:
         arguments:
             $botName: '%telegram.bot_name%'
-            $registries:
-                - '@App\Infrastructure\Telegram\Routing\Registry\FilterRoutesRegistry'
-                - '@App\Infrastructure\Telegram\Routing\Registry\CommandRoutesRegistry'
-                - '@App\Infrastructure\Telegram\Routing\Registry\ReactionRoutesRegistry'
-                - '@App\Infrastructure\Telegram\Routing\Registry\CallbackQueryRoutesRegistry'
-                - '@App\Infrastructure\Telegram\Routing\Registry\BotMentionRoutesRegistry'
-                - '@App\Infrastructure\Telegram\Routing\Registry\MyChatMemberRoutesRegistry'
-                - '@App\Infrastructure\Telegram\Routing\Registry\DeletedMessageRoutesRegistry'
-                - '@App\Infrastructure\Telegram\Routing\Registry\PrivateChatRoutesRegistry'
-                - '@App\Infrastructure\Telegram\Routing\Registry\FallbackRoutesRegistry'
+            $registries: !tagged_iterator 'app.route_registry'
+
+    App\Infrastructure\Telegram\Middleware\DeduplicationMiddleware:
+        arguments:
+            $cache: '@cache.telegram'
 
     App\Infrastructure\Telegram\Middleware\MiddlewareManager:
         arguments:
             $middlewares:
                 - '@App\Infrastructure\Telegram\Middleware\DeduplicationMiddleware'
 
+    App\Infrastructure\Telegram\Service\RateLimiterService:
+        arguments:
+            $banInitiationLimiter: '@limiter.ban_initiation'
+            $votingLimiter: '@limiter.voting'
+
     App\Domain\Telegram\Service\ChatConfigServiceInterface:
         alias: App\Domain\Telegram\Service\ChatConfigService
+
+    App\Domain\Telegram\Service\TelegramApiServiceInterface:
+        alias: App\Infrastructure\Telegram\Service\TelegramApiService
+
+    App\Domain\Telegram\Service\TelegramChatMemberApiInterface:
+        alias: App\Infrastructure\Telegram\Service\TelegramApiService
+
+    App\Domain\Telegram\Service\TelegramMessageApiInterface:
+        alias: App\Infrastructure\Telegram\Service\TelegramApiService
+
+    App\Domain\Telegram\Service\TelegramWebhookApiInterface:
+        alias: App\Infrastructure\Telegram\Service\TelegramApiService
+
+    App\Domain\Telegram\Service\BanProcessServiceInterface:
+        alias: App\Domain\Telegram\Service\BanProcessService
+
+    App\Domain\Telegram\Service\BanServiceInterface:
+        alias: App\Domain\Telegram\Service\BanService
+
+    App\Domain\Telegram\Service\VoteServiceInterface:
+        alias: App\Domain\Telegram\Service\VoteService
+
+    App\Domain\Telegram\Service\BanMessageFormatterInterface:
+        alias: App\Domain\Telegram\Service\BanMessageFormatter
+
+    App\Domain\Telegram\Service\SpammerMessageServiceInterface:
+        alias: App\Domain\Telegram\Service\SpammerMessageService
+
+    App\Domain\Telegram\Service\TrustServiceInterface:
+        alias: App\Domain\Telegram\Service\TrustService
+
+    App\Domain\Telegram\Service\UserPersisterInterface:
+        alias: App\Domain\Telegram\Service\UserPersister
+
+    App\Domain\Telegram\Service\ChatPersisterInterface:
+        alias: App\Domain\Telegram\Service\ChatPersister
+
+    App\Domain\Telegram\Service\HistoryServiceInterface:
+        alias: App\Domain\Telegram\Service\HistoryService
+
+    App\Domain\Telegram\Service\BanMessageCleanupServiceInterface:
+        alias: App\Domain\Telegram\Service\BanMessageCleanupService

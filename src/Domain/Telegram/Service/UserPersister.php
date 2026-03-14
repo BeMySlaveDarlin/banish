@@ -8,12 +8,12 @@ use App\Domain\Telegram\Entity\TelegramChatUserEntity;
 use App\Domain\Telegram\Repository\UserRepository;
 use App\Domain\Telegram\ValueObject\TelegramMessageChat;
 use App\Domain\Telegram\ValueObject\TelegramMessageFrom;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 
-class UserPersister
+final readonly class UserPersister implements UserPersisterInterface
 {
     public function __construct(
-        private readonly UserRepository $userRepository,
-        private readonly TelegramApiService $telegramApiService
+        private UserRepository $userRepository
     ) {
     }
 
@@ -24,7 +24,16 @@ class UserPersister
 
         $existing = $this->userRepository->findByChatAndUser($chatId, $userId);
         if ($existing === null) {
-            $existing = $this->userRepository->createUser($chatId, $userId);
+            try {
+                $existing = $this->userRepository->createUser($chatId, $userId);
+                $this->userRepository->save($existing);
+            } catch (UniqueConstraintViolationException) {
+                $this->userRepository->clear();
+                $existing = $this->userRepository->findByChatAndUser($chatId, $userId);
+                if ($existing === null) {
+                    throw new \RuntimeException("Failed to persist user $userId in chat $chatId");
+                }
+            }
         }
 
         if (empty($existing->name)) {
@@ -40,11 +49,6 @@ class UserPersister
 
         $this->userRepository->save($existing);
 
-        $chatMember = $this->telegramApiService->getChatMember($chatId, $userId);
-        $existing->isAdmin = $chatMember && $chatMember->isAdmin();
-        $this->userRepository->save($existing);
-
         return $existing;
     }
-
 }

@@ -6,6 +6,8 @@ namespace App\Presentation\Http\Controller\Api\Admin;
 
 use App\Domain\Admin\Service\AdminSessionService;
 use App\Domain\Telegram\Entity\TelegramChatEntity;
+use App\Domain\Telegram\Repository\ChatRepository;
+use App\Domain\Telegram\Repository\UserRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Request;
@@ -18,6 +20,8 @@ abstract class AbstractAdminController extends AbstractController
 
     public function __construct(
         protected AdminSessionService $sessionService,
+        protected UserRepository $userRepository,
+        protected ChatRepository $chatRepository,
     ) {
     }
 
@@ -62,15 +66,12 @@ abstract class AbstractAdminController extends AbstractController
         if (!$session) {
             return null;
         }
-        if (property_exists($this, 'userRepository') && property_exists($this, 'chatRepository')) {
-            $chatUser = $this->userRepository->findByChatAndUser($chatId, $session->userId);
-            if (!$chatUser || !$chatUser->isAdmin) {
-                return null;
-            }
 
-            return $this->chatRepository->findByChatId($chatId);
+        $chatUser = $this->userRepository->findByChatAndUser($chatId, $session->userId);
+        if (!$chatUser || !$chatUser->isAdmin) {
+            return null;
         }
 
-        return null;
+        return $this->chatRepository->findByChatId($chatId);
     }
 }

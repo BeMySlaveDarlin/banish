@@ -1,89 +1,60 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '@/utils/api'
-
-console.log('🏪 Auth store loading...')
+import logger from '@/utils/logger'
 
 export const useAuthStore = defineStore('auth', () => {
-    const user = ref(null)
-    const token = ref(null)
-    const sessionChecked = ref(false)
+  const user = ref(null)
+  const sessionChecked = ref(false)
 
-    console.log('🔓 Auth store initialized')
+  const isAuthenticated = computed(() => !!user.value)
 
-    const isAuthenticated = computed(() => !!user.value)
+  const login = async (loginToken) => {
+    try {
+      const response = await api.post('/api/admin/auth/login/', { token: loginToken })
+      user.value = response.data
+      logger.log('User logged in, cookie set by server')
+      return true
+    } catch (error) {
+      logger.error('Login failed:', error.message)
+      return false
+    }
+  }
 
-    const login = async(loginToken) => {
-        console.log('🔐 Auth store: Starting login with token:', !!loginToken)
-        try {
-            const url = '/api/admin/auth/login/'
-            console.log('📡 Auth store: Sending GET to', url)
+  const logout = async () => {
+    try {
+      await api.post('/api/admin/auth/logout/')
+    } catch (error) {
+      logger.error('Logout API error:', error.message)
+    } finally {
+      user.value = null
+    }
+  }
 
-            const response = await api.post(url, { token: loginToken })
-            console.log('✅ Auth store: Login response received:', response.data)
-          // Token is now in HTTP-only cookie, no need to store in localStorage
-            user.value = response.data
-            token.value = loginToken  // Store for reference only
-            console.log('💾 Auth store: User logged in, cookie set by server')
-            return true
-        } catch (error) {
-            console.error('❌ Auth store: Login failed:', {
-                message: error.message,
-                status: error.response?.status,
-                data: error.response?.data
-            })
-            return false
-        }
+  const validateSession = async () => {
+    if (sessionChecked.value) {
+      return !!user.value
     }
 
-    const logout = async() => {
-        console.log('🚪 Auth store: Starting logout...')
-        try {
-            await api.post('/api/admin/auth/logout/')
-            console.log('✅ Auth store: Logout API call successful, cookie cleared')
-        } catch (error) {
-            console.error('⚠️ Auth store: Logout API error:', error.message)
-        } finally {
-            token.value = null
-            user.value = null
-            console.log('🗑️ Auth store: User session cleared')
-        }
+    try {
+      const response = await api.post('/api/admin/auth/validate/')
+      user.value = response.data
+      sessionChecked.value = true
+      return true
+    } catch (error) {
+      logger.error('Session validation failed:', error.message)
+      user.value = null
+      sessionChecked.value = true
+      return false
     }
+  }
 
-    const validateSession = async() => {
-        console.log('🔄 Auth store: Validating session...')
-        if (sessionChecked.value) {
-            console.log('🔄 Auth store: Session already checked in this session')
-            return !!user.value
-        }
-
-        try {
-            console.log('📡 Auth store: Sending validation request')
-            const response = await api.post('/api/admin/auth/validate/')
-            console.log('✅ Auth store: Session validated:', response.data)
-            user.value = response.data
-            sessionChecked.value = true
-            return true
-        } catch (error) {
-            console.error('❌ Auth store: Session validation failed:', {
-                message: error.message,
-                status: error.response?.status
-            })
-            token.value = null
-            user.value = null
-            sessionChecked.value = true
-            console.log('🗑️ Auth store: Invalid session cleared')
-            return false
-        }
-    }
-
-    return {
-        user,
-        token,
-        isAuthenticated,
-        login,
-        logout,
-        validateSession,
-        sessionChecked
-    }
+  return {
+    user,
+    isAuthenticated,
+    login,
+    logout,
+    validateSession,
+    sessionChecked,
+  }
 })

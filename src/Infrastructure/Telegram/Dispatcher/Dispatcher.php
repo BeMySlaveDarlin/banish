@@ -6,8 +6,8 @@ namespace App\Infrastructure\Telegram\Dispatcher;
 
 use App\Application\Command\Telegram\UnsupportedCommand;
 use App\Domain\Telegram\Command\TelegramCommandInterface;
-use App\Domain\Telegram\Service\ChatPersister;
-use App\Domain\Telegram\Service\UserPersister;
+use App\Domain\Telegram\Service\ChatPersisterInterface;
+use App\Domain\Telegram\Service\UserPersisterInterface;
 use App\Domain\Telegram\ValueObject\TelegramUpdate;
 use App\Infrastructure\Telegram\Middleware\MiddlewareManager;
 use App\Infrastructure\Telegram\Routing\Router;
@@ -18,8 +18,8 @@ class Dispatcher
         private readonly Router $router,
         private readonly CommandHandlerFactory $handlerFactory,
         private readonly MiddlewareManager $middlewareManager,
-        private readonly ChatPersister $chatPersister,
-        private readonly UserPersister $userPersister
+        private readonly ChatPersisterInterface $chatPersister,
+        private readonly UserPersisterInterface $userPersister
     ) {
     }
 
@@ -35,7 +35,7 @@ class Dispatcher
     {
         $tgChat = $update->getChat();
         $tgUser = $update->getFrom();
-        if (!$tgChat?->id || !$tgUser?->id) {
+        if (!$tgChat->id || !$tgUser->id) {
             return new UnsupportedCommand();
         }
 

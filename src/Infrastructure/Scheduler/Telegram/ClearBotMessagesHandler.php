@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Scheduler\Telegram;
 
-use App\Domain\Telegram\Service\BanMessageCleanupService;
+use App\Domain\Telegram\Service\BanMessageCleanupServiceInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
@@ -12,7 +12,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 class ClearBotMessagesHandler
 {
     public function __construct(
-        private readonly BanMessageCleanupService $cleanupService,
+        private readonly BanMessageCleanupServiceInterface $cleanupService,
         private readonly LoggerInterface $logger,
     ) {
     }

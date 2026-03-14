@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Telegram\ValueObject\Bot;
 
-class TelegramEditMessage
+final class TelegramEditMessage
 {
     /**
      * @param TelegramReplyMarkup|array<int, array<string, string>> $reply_markup
